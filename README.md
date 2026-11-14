@@ -230,7 +230,7 @@ It crosses sample sizes 40, 80 and 160 with prior-location offsets of -1,
 contamination weights 5%, 10% and 20% and diffuse-scale multipliers 3, 5 and
 10, alongside the nominal prior and a correctly centred diffuse reference.
 This produces 492 prior/DGP/sample-size result cells, each with 100
-replications and 1,024 midpoint-quadrature points in the standard run.
+replications and 2,048 midpoint-quadrature points in the standard run.
 Datasets are paired across every prior variant within each DGP/sample-size
 replication. The working likelihood remains Normal(theta, 1).
 
@@ -246,7 +246,7 @@ Run the grid after installing GDS:
 python experiments/prior_bias_control_stress.py \
   --sample-sizes 40 80 160 \
   --repetitions 100 \
-  --points 1024 \
+  --points 2048 \
   --seed 2026111402 \
   --output prior_bias_control_stress_results.json
 ```

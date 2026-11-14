@@ -142,6 +142,10 @@ PRIORS = (
     PriorSpec("concentrated", 0.0, 1.0, 0.75, 0.0, 0.0),
     PriorSpec("diffuse", 0.0, 0.8, 4.0, 0.0, 0.0),
     PriorSpec("spectrally_modulated", 0.0, 1.0, 2.0, 0.45, 0.8),
+    # Oracle-centred benchmark: the prior location equals the simulation truth.
+    PriorSpec("location_truth_centered", 0.5, 1.0, 2.0, 0.0, 0.0),
+    # Deliberately displaced prior to expose location-induced shrinkage.
+    PriorSpec("location_shifted_away", -1.0, 1.0, 2.0, 0.0, 0.0),
 )
 
 

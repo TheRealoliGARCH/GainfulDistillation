@@ -1,77 +1,68 @@
-# GDS First Research Milestone: Six-Density Verification
+# GDS First Research Milestone: Six-Density Verification (SciPy)
 
-**Status:** High-accuracy numerical verification completed. Rigorous analytic or interval-arithmetic bounds for the strict peak inequalities remain a follow-up task.
+**Verification engine:** SciPy `scipy.integrate.quad` (QUADPACK), with special-function values from `scipy.special`. No NumPy API is called directly. This SciPy audit supersedes the earlier hand-written adaptive-Simpson prototype.
 
-## 1. Source conventions
+## 1. Formula transcription and conventions
 
-This audit examines the six piecewise densities in *Six Probability Density Functions*, pages 1, 3, 5, 7, 9 and 11; the associated plots appear on pages 2, 4, 6, 8, 10 and 12.
+The six piecewise expressions were transcribed from the rendered formula pages of *Six Probability Density Functions*: Ghosh (p. 1), Mahaloy (p. 3), Madras (p. 5), Temple bell (p. 7), Rocket cone (p. 9), and Cup (p. 11). The first five have support `[-1, 1]`; Temple bell has support on the real line.
 
-The Mahaloy definition says only that `sinc` is the sinc function. Its printed normaliser and plotted zero locations are consistent with the **unnormalised** convention `sinc(u) = sin(u)/u`, with `sinc(0)=1`. This audit uses that convention explicitly. The paper should specify it because the normalised convention `sin(pi*u)/(pi*u)` gives a different function.
+The Mahaloy formula writes `sinc(8*x^2)` without specifying the convention. This audit uses the unnormalised convention `sinc(u) = sin(u)/u`, with `sinc(0) = 1`. This is consistent with both the printed Fresnel-C normalising constant and the zero locations visible in the graph on p. 4. The integral of the absolute kernel is split at its two positive interior zeros, `sqrt(pi/8)` and `sqrt(pi/4)`. The normalised convention `sin(pi*u)/(pi*u)` would define a different density and would not reproduce the printed constant/plot.
 
-The Fresnel functions are interpreted as defined in the paper:
+The Fresnel functions follow the paper's definitions:
 - `C(z) = integral_0^z cos(pi*t^2/2) dt`;
 - `S(z) = integral_0^z sin(pi*t^2/2) dt`.
 
-The imaginary error function is `erfi(z) = erf(i*z)/i`.
-
 ## 2. Normalising constants
 
-Writing each density as its kernel divided by `D`, the constants printed in the paper are:
+Let `D` denote the denominator in each density. The printed formulae give:
 
-- **Ghosh:** `D_G = 2*(1 + C(sqrt(6))/sqrt(6))`.
-- **Mahaloy:**
-  `D_M = 1/4 * [-sin(8) - 8*sqrt(pi)*C(2) + 8*sqrt(pi)*C(sqrt(2)) + 4*sqrt(pi)*C(4/sqrt(pi))]`.
-- **Madras:** `D_D = sqrt(2)*S(sqrt(2))`.
-- **Temple bell:** `D_T = 2*Gamma(5/4) = Gamma(1/4)/2`.
-- **Rocket cone:** `D_R = sqrt(pi)*erf(1)`.
-- **Cup:** `D_C = sqrt(pi)*erfi(1)`.
+- Ghosh: `D_G = 2*(1 + C(sqrt(6))/sqrt(6))`;
+- Mahaloy: `D_M = 1/4 * [-sin(8) - 8*sqrt(pi)*C(2) + 8*sqrt(pi)*C(sqrt(2)) + 4*sqrt(pi)*C(4/sqrt(pi))]`;
+- Madras: `D_D = sqrt(2)*S(sqrt(2))`;
+- Temple bell: `D_T = 2*Gamma(5/4)`;
+- Rocket cone: `D_R = sqrt(pi)*erf(1)`;
+- Cup: `D_C = sqrt(pi)*erfi(1)`.
 
-The Ghosh, Madras, Rocket cone and Cup identities follow by substitution in their defining integrals. The Temple bell identity follows from the Gamma integral and `Gamma(5/4)=Gamma(1/4)/4`. For Mahaloy, the printed Fresnel expression was checked against direct integration of the absolute sinc kernel, splitting at the two positive-side interior zeros.
+SciPy's Fresnel outputs and special functions were used to evaluate these constants. Independently, QUADPACK integrated each unnormalised kernel over its full support (using symmetry and the Mahaloy zero splits). The numerical kernel integral and its formula-based denominator agree to the reported floating-point precision for all six cases.
 
 ## 3. Numerical results
 
-All six functions are even, so their means are zero. The following values were computed using adaptive Simpson quadrature; the reported integral is an independent numerical integration of each implemented density.
+Integrals and moments were evaluated with `epsabs = epsrel = 1e-12` and `limit = 500`. For Temple bell, QUADPACK integrated over `[0, infinity)` rather than using a finite truncation. Since all six functions are even, their means are zero.
 
-| Density | Normaliser `D` | Numeric integral | Peak density | Variance | Kurtosis |
+| Density | Normaliser `D` | Integral of normalised density | Peak density | Variance | Kurtosis |
 |---|---:|---:|---:|---:|---:|
-| Ghosh | 2.413671104813 | 1.000000000000 | 0.828613308587 | 0.264917290354 | 2.241045968808 |
-| Mahaloy | 1.029851026428 | 1.000000000000 | 0.971014228600 | 0.134795111147 | 2.914695231469 |
-| Madras | 1.009709188227 | 1.000000000000 | 0.990384173641 | 0.433146815363 | 1.275253587922 |
-| Temple bell | 1.812804954111 | 1.000000000000 | 0.551631325660 | 0.337989120034 | 2.188439615230 |
-| Rocket cone | 1.493648265625 | 1.000000000000 | 0.669501664491 | 0.253704101804 | 2.085895218156 |
-| Cup | 2.925303491814 | 1.000000000000 | 0.929230705828 | 0.429230705828 | 1.548991521369 |
+| Ghosh | 2.413671104813002 | 0.9999999999999998 | 0.828613308587024 | 0.264917290353926 | 2.24104596880736 |
+| Mahaloy | 1.029851026428492 | 1.0000000000000000 | 0.971014228599630 | 0.134795111147494 | 2.91469523146811 |
+| Madras | 1.009709188227373 | 1.0000000000000002 | 0.990384173640711 | 0.433146815362601 | 1.27525358792227 |
+| Temple bell | 1.812804954110954 | 1.0000000000000002 | 0.551631325660419 | 0.337989120033642 | 2.18843961522648 |
+| Rocket cone | 1.493648265624854 | 1.0000000000000002 | 0.669501664491044 | 0.253704101803684 | 2.08589521815590 |
+| Cup | 2.925303491814363 | 1.0000000000000000 | 0.929230705827751 | 0.429230705827751 | 1.54899152136945 |
 
-The peak values are the kernel maxima divided by their normalisers: respectively `2/D_G`, `1/D_M`, `1/D_D`, `1/D_T`, `1/D_R`, and `e/D_C`.
+The absolute QUADPACK error estimates for the raw-kernel integrals are at most about `1.7e-12` in this run. They are numerical error estimates, not formal interval certificates.
 
-## 4. Main finding: all six peaks are below one
+## 4. Peak calculations and the Cup inequality
 
-The five strict inequalities stated in the paper are reproduced numerically. The Cup density, for which the paper gives only `0 <= f(x) <= 1`, also has a strict maximum:
+The kernel maxima on their supports are respectively `2, 1, 1, 1, 1, e`. Thus the peak densities are those maxima divided by their normalisers. All six computed maxima are strictly below one. Madras is closest to one, at approximately `0.990384173640711`.
 
-`sup_x f_Cup(x) = e/(sqrt(pi)*erfi(1)) = 0.929230705828 < 1`.
+The Cup case admits a simple analytic strengthening of the paper's weak inequality. Its denominator is `D_C = integral_{-1}^{1} exp(x^2) dx`. For `|x| <= 1`, `exp(x^2) >= 1 + x^2 + x^4/2`, so `D_C >= 2 + 2/3 + 1/5 = 43/15 > e`. Consequently `sup f_Cup = e/D_C < 1`; SciPy evaluates this supremum as approximately `0.929230705827751`. Therefore the Cup density also satisfies a strict upper bound, not merely the weak bound printed in the paper.
 
-Its normaliser exceeds `e` by approximately `0.207021663355`. Thus the Cup statement can be strengthened to a strict upper bound, subject to a formal analytic or interval-arithmetic enclosure of this constant comparison.
+For the other five, this audit is a high-accuracy numerical verification of the printed normalisers and peak inequalities. It is not claiming that floating-point quadrature error estimates alone constitute formal mathematical proofs of those inequalities. S2's follow-up is to provide analytic bounds or interval-arithmetic certificates for their normaliser-versus-kernel-maximum comparisons.
 
-Madras is closest to the ceiling, with peak approximately `0.990384173641`.
+## 5. Reproducibility
 
-**Numerical-certificate qualification:** the implementation uses adaptive Simpson quadrature with target tolerance `2e-11`. It is not interval arithmetic and is not yet a machine-checked proof of the strict constant inequalities. S2's next task is to derive transparent analytic bounds or rigorous interval enclosures, especially for the Mahaloy and Madras normalisers and for the Cup comparison with `e`.
+- Implementation: `experiments/six_density_verification.py`.
+- Tests: `tests/test_six_density_verification.py`.
+- Archived SciPy output: `results/six_density_verification.json`.
+- Runtime dependency for this research check: SciPy. The core GDS package remains free of mandatory runtime dependencies; SciPy is included in the optional development/test dependencies.
 
-## 5. Support and moments
+The test suite checks all six normalised integrals, peak bounds, the Mahaloy convention and equality between its printed normaliser and direct kernel integration, the strengthened Cup bound, and reference moments.
 
-The five distributions other than Temple bell have compact support `[-1,1]), so all their polynomial moments exist. Temple bell has real-line support, but its `exp(-x^4)` tails also give finite moments of every polynomial order. All six are symmetric, have zero mean, and have positive variance.
+## 6. Next independent checks
 
-## 6. Reproducibility
+- S1: examine the six densities as possible Bayesian priors, separating prior shape from likelihood information.
+- S2: derive analytic or rigorous interval bounds for the first five strict peak inequalities.
+- S3: maintain the independent SciPy implementation and cross-check endpoints and support handling.
+- S4: compare moments, entropy, tail behaviour, and sampling methods under one protocol.
+- S5: adversarially test transcription, sinc conventions, endpoint definitions, absolute-value handling, and alternative interpretations.
 
-- `experiments/six_density_verification.py` uses only the Python standard library.
-- `tests/test_six_density_verification.py` checks normalisation, strict peak bounds, the Mahaloy sinc convention, the strengthened Cup bound, and reference moments.
-- The Mahaloy absolute-value integral is split at `sqrt(pi/8)` and `sqrt(pi/4)` on the positive half-axis.
-- The Temple bell integral is truncated at `x=12` on the positive half-axis; the omitted `exp(-x^4)` tail is negligible at the reported precision.
-
-## 7. Next assignments
-
-- **S1:** study Bayesian-prior interpretations and distinguish prior shape from likelihood information.
-- **S2:** derive analytic proofs or rigorous interval bounds for all peak inequalities and normalising constants.
-- **S3:** maintain the independent implementation and add cross-implementation tests.
-- **S4:** compare moments, entropy, tail behaviour and sampling efficiency under a common protocol.
-- **S5:** challenge the sinc convention, endpoint definitions, absolute-value handling, truncation and inequalities independently.
-
-This is the first reproducible checkpoint, not the end of the investigation.
+This is a reproducible numerical checkpoint, not the end of the investigation.

@@ -9,12 +9,12 @@ The initial architecture contains one teacher and five students. The students fo
 ## Central components
 
 - **Adaptive knowledge transmission:** distinct teacher-to-student, student-to-teacher, and peer-to-peer channels.
-- **Student Learning Dynamics Estimator (SLDE):** estimates domain- and method-specific learning rates, retention, transfer, Breadth, Depth, and uncertainty.
-- **Specialist task allocation:** routes tasks to individual students or collaborative coalitions.
+- **Student Learning Dynamics Estimator (SLDE):** maintains student–domain–method-specific online estimates of learning response, with optional descriptive estimates for retention, transfer, Breadth, and Depth.
+- **Specialist task allocation:** intended to route tasks to individual students or collaborative coalitions.
 - **Independent learning:** protects each student's capacity to investigate beyond teacher and peer information.
-- **Resource allocation:** allocates compute according to expected marginal verified gain, covariance, cost, and risk.
-- **Stability and diversity controls:** constrain error propagation and reduce epistemic collapse.
-- **External validation and governance:** distinguish transmission, investigation, verification, and integration.
+- **Resource allocation:** intended to allocate compute according to expected marginal verified gain, covariance, cost, and risk.
+- **Stability and diversity controls:** intended to constrain error propagation and reduce epistemic collapse.
+- **External validation and governance:** intended to distinguish transmission, investigation, verification, and integration.
 
 ## Principal research conjecture
 
@@ -26,17 +26,20 @@ This is a falsifiable research conjecture, not an established empirical result. 
 
 | Path | Description |
 |---|---|
-| `1. The Theory of Gainful Distillation.pdf` | Current treatise |
-| `the_theory_of_gainful_distillation.tex` | LaTeX source of the treatise |
+| `1. The Theory of Gainful Distillation.pdf` | Existing treatise (PDF manuscript) |
 | `src/gds_core/graph.py` | Fixed six-agent structural topology |
-| `src/gds_core/transmission.py` | Directed adaptive transmission channels |
-| `tests/` | Unit tests for topology and transmission invariants |
+| `src/gds_core/transmission.py` | Directed adaptive transmission-channel representation |
+| `src/gds_core/slde.py` | Online Student Learning Dynamics Estimator |
+| `tests/test_graph.py` | Structural topology tests |
+| `tests/test_transmission.py` | Directed transmission tests |
+| `tests/test_slde.py` | SLDE estimation and validation tests |
 | `pyproject.toml` | Python package and test configuration |
-| `.github/workflows/latex-build.yml` | LaTeX manuscript build validation |
 | `.github/workflows/python-tests.yml` | Python test workflow |
 | `LICENSE` | Repository license |
 
-## GDS-Core: implemented conventions
+The PDF is retained as the manuscript artifact. This repository does not contain a LaTeX source file or a LaTeX build workflow.
+
+## GDS-Core: structural topology
 
 The node order is (T, S1, S2, S3, S4, S5). The student subgraph contains all ten edges of K5. The additional circumferential overlay adds one further unit of multiplicity to each of the five perimeter pairs.
 
@@ -50,6 +53,16 @@ Consequently:
 
 The structural adjacency matrix is symmetric and fixed. The transmission matrix is directed and dynamic. Its convention is `W[source][target]`; therefore teacher-to-student and student-to-teacher strengths are independently parameterised. Peer transmission is the structural multiplicity multiplied by a directed peer-channel multiplier.
 
+## Student Learning Dynamics Estimator
+
+The SLDE maintains a separate profile for each student–domain–method tuple. Its current learning-response estimator uses scalar recursive least squares (RLS) to model performance change as a function of positive instructional dose:
+
+`performance\_after - performance\_before = learning\_rate × instructional\_dose + residual.`
+
+The forgetting factor is configurable; a value of one gives ordinary RLS, while a value below one discounts older observations. Retention, transfer, Breadth, and Depth are tracked as optional bounded observations using online descriptive moments. Missing metric values are left missing rather than imputed as zero.
+
+These estimates are implementation-level statistical summaries, not validated measures of general intelligence or universal learning ability. In particular, the scalar response model and its uncertainty estimates require further specification, simulation, calibration, and empirical evaluation before being used for consequential task or resource allocation.
+
 ## Development and testing
 
 Python 3.10 or later is required. Install the development dependency and run the test suite:
@@ -60,17 +73,6 @@ python -m pytest
 ```
 
 The Python workflow runs the test suite on pushes and pull requests that change source code, tests, or project configuration.
-
-## Building the treatise
-
-The manuscript uses the standard `article` document class and standard LaTeX packages, including AMS mathematics, `booktabs`, and PGF/TikZ.
-
-```bash
-pdflatex -interaction=nonstopmode -halt-on-error the_theory_of_gainful_distillation.tex
-pdflatex -interaction=nonstopmode -halt-on-error the_theory_of_gainful_distillation.tex
-```
-
-The second pass resolves cross-references and the table of contents. The LaTeX workflow compiles the manuscript and uploads the resulting PDF as a workflow artifact.
 
 ## Research discipline
 
@@ -84,8 +86,8 @@ The second pass resolves cross-references and the table of contents. The LaTeX w
 
 ## Implementation status
 
-**Implemented:** GDS-Core structural graph, directed transmission-channel representation, and unit tests for graph and channel invariants.
+**Implemented:** GDS-Core structural graph, directed transmission-channel representation, online SLDE with scalar RLS and optional descriptive metric tracking, and unit tests for these components.
 
-**Next:** Student Learning Dynamics Estimator (SLDE), followed by specialist task routing, resource optimisation, external validation, and reproducible evaluation.
+**Next:** specialist task routing, resource optimisation, external validation, stability and diversity controls, and reproducible end-to-end evaluation.
 
 The treatise provides a theoretical specification and empirical research programme. Claims of performance superiority remain subject to implementation, replication, and independent validation.

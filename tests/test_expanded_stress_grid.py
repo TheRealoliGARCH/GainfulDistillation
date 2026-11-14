@@ -40,6 +40,8 @@ def test_expanded_stress_grid_is_reproducible_and_returns_full_cell_grid():
         assert result["mean_absolute_posterior_reference_gap_z"] >= 0.0
         assert 0.0 <= result["prior_reference_conflict_warning_rate"] <= 1.0
         assert 0.0 <= result["posterior_pull_warning_rate"] <= 1.0
+        assert 0.0 <= result["prior_concentration_warning_rate"] <= 1.0
+        assert result["mean_prior_to_reference_sd_ratio"] >= 0.0
 
 
 def test_stress_grid_uses_common_random_datasets_across_prior_variants():

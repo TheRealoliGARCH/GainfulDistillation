@@ -31,6 +31,7 @@ This is a falsifiable research conjecture, not an established empirical result. 
 | `src/gds_core/transmission.py` | Directed adaptive transmission channels |
 | `src/gds_core/slde.py` | Online Student Learning Dynamics Estimator |
 | `src/gds_core/routing.py` | Probabilistic task routing and coalition shortlists |
+| `src/gds_core/resource_allocation.py` | Constrained quadratic resource allocation |
 | `tests/` | Unit tests for graph, transmission, and SLDE |
 | `pyproject.toml` | Python package and test configuration |
 | `.github/workflows/python-tests.yml` | Automated Python test workflow |
@@ -73,6 +74,18 @@ Scores are converted to probabilities with a temperature-scaled softmax. A confi
 
 These are routing heuristics, not validated optimal policies. The uncertainty bonus is an exploration proxy, not a formal value-of-information calculation. Expected gain, fit, uncertainty, and cost must be calibrated to comparable units before deployment. Coalition shortlisting does not yet model complementarity, coordination overhead, or joint performance.
 
+## Resource allocation: current conventions
+
+The resource allocator solves the concave quadratic programme:
+
+`max_r  mu.T r - (lambda/2) r.T Sigma r - (eta/2) ||r||^2`
+
+subject to a total budget and per-student lower and upper allocation shares. Here, mu contains expected marginal gains, Sigma is a symmetric positive-semidefinite covariance matrix, lambda is risk aversion, and eta is a regularisation coefficient. The lower share provides an optional exploration floor; the upper share limits concentration.
+
+The implementation uses projected gradient ascent over a capped simplex, with a conservative step based on an upper bound for the Hessian's spectral norm. A dependency-free Jacobi rotation check validates covariance positive semidefiniteness. When the quadratic curvature is zero, the linear programme is solved directly. The result reports allocations, objective components, budget use, iteration count, convergence status, and a projected-gradient diagnostic.
+
+A result with `converged=False` is an iteration-limited approximation and must not be represented as an optimum. Covariance estimates and expected gains must be calibrated to compatible units and estimated from appropriate held-out or historical data. The allocator does not infer covariance from SLDE standard errors, and it does not yet impose group-level, task-specific, or coalition-complementarity constraints.
+
 ## Development and testing
 
 Python 3.10 or later is required:
@@ -96,8 +109,8 @@ The Python workflow runs tests on pushes and pull requests that change source co
 
 ## Implementation status
 
-**Implemented:** GDS-Core structural graph, directed transmission-channel representation, online SLDE, and probabilistic task routing with an exploration floor and top-k coalition shortlist; all have unit tests.
+**Implemented:** GDS-Core structural graph, directed transmission-channel representation, online SLDE, probabilistic task routing, and constrained quadratic resource allocation; each component has unit tests.
 
-**Next:** resource optimisation, coalition complementarity and coordination costs, external validation, and reproducible end-to-end evaluation.
+**Next:** coalition complementarity and coordination costs, external validation, calibration of gain and covariance estimates, and reproducible end-to-end evaluation.
 
 The PDF treatise provides the theoretical specification and empirical research programme. Claims of performance superiority remain subject to implementation, replication, and independent validation.

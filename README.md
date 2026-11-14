@@ -46,6 +46,7 @@ This is a falsifiable research conjecture, not an established empirical result. 
 | `src/gds_core/balanced_loss.py` | Scalar Bayesian balanced-loss variance correction using posterior score-information averaging |
 | `experiments/expanded_stress_grid.py` | Multi-distribution, multi-sample-size and multi-prior Monte Carlo stress grid |
 | `experiments/normal_mean_misspecification.py` | Reproducible Monte Carlo study under correct and misspecified Normal likelihood variance |\n| `experiments/prior_bias_control.py` | Paired Monte Carlo study of diffuse-contamination prior robustification and finite-sample bias |
+| `experiments/prior_bias_control_stress.py` | Factorial stress grid crossing prior-location errors, contamination weights and diffuse-scale multipliers under misspecified data-generating processes |
 | `src/gds_core/sandwich.py` | General estimating-equation sandwich covariance calculation |
 | `src/gds_core/verification.py` | Provenance-aware independent claim adjudication |
 | `tests/` | Unit tests for graph, transmission, and SLDE |
@@ -215,6 +216,47 @@ python experiments/prior_bias_control.py \
 
 The GitHub Actions workflow `.github/workflows/bayesian-prior-bias-control.yml`
 runs this paired design, stores the JSON output as a build artifact, and archives the fixed-seed results at `results/prior_bias_control_seed_20261114.json`. The detailed analysis is in [the prior-bias-control report](results/prior_bias_control_analysis.md).
+
+
+### Prior-location and diffuse-contamination stress grid
+
+The follow-on experiment `experiments/prior_bias_control_stress.py` expands the
+single Normal study into four data-generating processes: correctly specified
+Normal SD 1, misspecified Normal SD 2, Student-t(5) with variance 4, and
+independent heteroskedastic Normal observations with average variance 4.
+
+It crosses sample sizes 40, 80 and 160 with prior-location offsets of -1,
+-0.5, +0.5 and +1 relative to the true parameter. At each location it tests
+contamination weights 5%, 10% and 20% and diffuse-scale multipliers 3, 5 and
+10, alongside the nominal prior and a correctly centred diffuse reference.
+This produces 492 prior/DGP/sample-size result cells, each with 100
+replications and 1,024 midpoint-quadrature points in the standard run.
+Datasets are paired across every prior variant within each DGP/sample-size
+replication. The working likelihood remains Normal(theta, 1).
+
+The mixtures retain their nominal component's location. The experiment
+therefore tests how much diffusion can mitigate a prior-location error; it
+does not allow an adaptive recentering that uses the observed data. The
+heteroskedastic case is independent but non-identically distributed, and no
+serial or cluster dependence is included.
+
+Run the grid after installing GDS:
+
+```bash
+python experiments/prior_bias_control_stress.py \
+  --sample-sizes 40 80 160 \
+  --repetitions 100 \
+  --points 1024 \
+  --seed 2026111402 \
+  --output prior_bias_control_stress_results.json
+```
+
+The GitHub Actions workflow
+`.github/workflows/bayesian-prior-bias-stress-grid.yml` archives the
+fixed-seed JSON at
+`results/prior_bias_control_stress_seed_2026111402.json` and uploads a
+downloadable workflow artifact. Findings will be reported separately after
+the run; the experiment definition itself is not evidence of performance.
 
 ### Monte Carlo experiment
 

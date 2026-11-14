@@ -3,12 +3,10 @@ name: LaTeX Build
 on:
   push:
     paths:
-      - "**.tex"
-      - ".github/workflows/latex-build.yml"
+      - "the_theory_of_gainful_distillation.tex"
   pull_request:
     paths:
-      - "**.tex"
-      - ".github/workflows/latex-build.yml"
+      - "the_theory_of_gainful_distillation.tex"
   workflow_dispatch:
 
 permissions:

@@ -76,12 +76,12 @@ def test_posterior_bias_diagnostic_identifies_prior_pull():
     prior = SincModulatedPrior(location=-1.0, bandwidth=1.0, scale=1.0)
     summary = summarize_prior_1d(prior, bounds=(-6.0, 6.0), points=2048)
     posterior = compute_posterior_1d(
-        prior, lambda theta: -0.5 * ((theta - 1.0) / 0.2) ** 2,
+        prior, lambda theta: -0.5 * ((theta - 1.0) / 0.5) ** 2,
         bounds=(-6.0, 6.0), points=4096,
     )
     diagnostic = assess_posterior_bias_1d(
         summary, posterior, likelihood_reference=1.0,
-        reference_standard_error=0.2,
+        reference_standard_error=0.5,
     )
     assert diagnostic.prior_mean < diagnostic.posterior_mean < 1.0
     assert diagnostic.prior_reference_gap < 0.0

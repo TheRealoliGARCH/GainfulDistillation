@@ -371,14 +371,38 @@ not evidence that a Mathematica run has completed.
 
 ### Geometric coverage of all six-PDF mixtures
 
-The analysis in [six-density mixture coverage](results/six_density_mixture_coverage_analysis.md)
-computes the union of the graphs of all convex mixtures of the six PDFs,
-where mixture weights are nonnegative and sum to one. At each horizontal
-coordinate, the attainable vertical values run from the pointwise minimum
-density to the pointwise maximum density. The SciPy calculation finds the
-envelope crossings and integrates the band; the numerical result is
-**73.2566%** of `[-1,1] x [0,1]`. Code, tests and the machine-readable result
-are in `experiments/mixture_coverage.py`,
+This is a first mathematical illustration of **Gainful Distillation**: six
+distinct densities generate a family of distributions whose combined
+geometric reach can be quantified. The six functions are the Ghosh, Mahaloy,
+Madras, Temple bell, Rocket cone, and Cup PDFs in *Six Probability Density
+Functions*.
+
+A weighted combination is interpreted as a convex probability mixture,
+
+`f_w(x) = sum_{i=1}^6 w_i f_i(x)`, with `w_i >= 0` and `sum_i w_i = 1`.
+
+At each fixed `x`, the attainable values of `f_w(x)` form the interval
+between the pointwise lower and upper envelopes,
+
+`m(x) = min_i f_i(x)` and `M(x) = max_i f_i(x)`.
+
+Thus the covered subset of the rectangle is
+`{(x,y): -1 <= x <= 1, m(x) <= y <= M(x)}`. The SciPy calculation locates
+the envelope-switching points and integrates the envelope width. It finds
+a covered area of approximately `1.465131990616` out of a rectangle area of
+`2`, giving **73.256599530806% coverage** and **26.743400469194% uncovered**.
+The calculation was repeated at two root-scan resolutions; the same eight
+envelope segments were recovered. This is a numerical geometric result,
+not by itself a proof of the broader Gainful Distillation Conjecture.
+
+The coverage also exceeds the benchmark `1 - 1/e` (approximately 63.2121%)
+by approximately **10.0445 percentage points**. This is a numerical
+comparison, not a claimed theoretical identity between the two quantities.
+
+The analysis, envelope intervals, and numerical qualifications are in
+[six-density mixture coverage](results/six_density_mixture_coverage_analysis.md).
+Code, tests and machine-readable results are in
+`experiments/mixture_coverage.py`,
 `tests/test_mixture_coverage.py`, and
 `results/six_density_mixture_coverage.json`.
 

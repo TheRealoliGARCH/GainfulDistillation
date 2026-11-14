@@ -154,6 +154,25 @@ The finite interval is an explicit modelling choice, not a silent numerical trun
 
 The current components remain reference primitives. Formal posterior-concentration diagnostics, multivariate inference, and empirical calibration remain separate research tasks. The code does not assert that the manuscripts' reported empirical improvements have already been independently established.
 
+### Prior-predictive and posterior-shrinkage diagnostics
+
+`prior_diagnostics.py` adds three diagnostic operations:
+
+1. `summarize_prior_1d` computes the prior mass retained inside the declared finite interval, conditional prior mean and variance, a central prior interval, and boundary-cell mass. The retained mass is important because the posterior engine conditions on the finite bounds; a materially truncated prior should not be mistaken for the original prior.
+2. `prior_predictive_check_1d` draws parameter values from the prior conditioned on those bounds, calls a user-supplied sampling-model simulator, and compares a scalar observed statistic with its prior-predictive distribution. It reports predictive quantiles and lower-, upper-, and two-sided tail probabilities with an add-one Monte Carlo correction. The callback must simulate the actual statistic being checked; separate checks should be run for scientifically distinct statistics such as location, dispersion, counts, or extremes.
+3. `assess_posterior_bias_1d` compares the prior mean and posterior mean with a supplied likelihood-only reference, such as an MLE. It reports a standardized prior-reference gap and a posterior-pull fraction:
+
+```
+pull = (posterior_mean - likelihood_reference)
+       / (prior_mean - likelihood_reference)
+```
+
+Values near one indicate that the posterior mean remains close to the prior mean relative to the likelihood reference; values near zero indicate that it is close to the likelihood reference. Values outside [0, 1] are possible. The standardized gap and pull fraction are descriptive diagnostics, not calibrated hypothesis tests and not estimates of frequentist bias from a single dataset. Actual frequentist bias is assessed across repeated samples.
+
+Diagnostic thresholds are configurable through `PriorBiasThresholds`. The functions issue warnings; they do not automatically recenter, temper, truncate, or reject a prior. That choice remains explicit and auditable.
+
+The 144-cell experiment in `expanded_stress_grid.py` now also reports prior-reference conflict warning rates, posterior-pull warning rates, retained prior mass, prior interval width, and standardized reference gaps for each data-generating process, sample size, and prior configuration. These fields allow prior sensitivity and mean displacement to be examined alongside variance calibration.
+
 ### Monte Carlo experiment
 
 The experiment `experiments/normal_mean_misspecification.py` is a supplemental high-variance study. It compares ordinary posterior uncertainty with the scalar balanced-loss robust standard error under four data-generating processes: correctly specified Normal errors with SD 1; Normal variance misspecification with SD 2; Student-t(5) errors rescaled to variance 4; and independent heteroskedastic Normal errors with average variance 4. It crosses sample sizes 40, 80 and 160 with four Sinc-prior configurations. Identical simulated datasets are used for all priors within each scenario/sample-size cell (common random numbers).
@@ -255,8 +274,8 @@ The Python workflow runs tests on pushes and pull requests that change source co
 
 ## Implementation status
 
-**Implemented:** GDS-Core structural graph, directed transmission-channel representation, online SLDE, probabilistic task routing, constrained quadratic resource allocation, Sinc covariance kernel, proper Sinc-modulated prior, one-dimensional Bayesian posterior reference engine, scalar Bayesian balanced-loss variance correction, frequentist sandwich covariance calculation, independent verification adjudication, and reproducible Normal-mean and expanded robustness Monte Carlo experiments; core components and experiment entry points have automated tests.
+**Implemented:** GDS-Core structural graph, directed transmission-channel representation, online SLDE, probabilistic task routing, constrained quadratic resource allocation, Sinc covariance kernel, proper Sinc-modulated prior, one-dimensional Bayesian posterior reference engine, scalar Bayesian balanced-loss variance correction, prior-predictive and posterior-shrinkage diagnostics, frequentist sandwich covariance calculation, independent verification adjudication, and reproducible Normal-mean and expanded robustness Monte Carlo experiments; core components and experiment entry points have automated tests.
 
-**Next:** extend posterior computation and balanced-loss correction to multivariate parameters; develop posterior-concentration and prior-predictive diagnostics; address prior-induced bias; replicate the NHANES application; and evaluate GDS end-to-end under matched compute and data budgets.
+**Next:** extend posterior computation and balanced-loss correction to multivariate parameters; develop posterior-concentration and prior-predictive diagnostics for additional statistics; evaluate explicit bias-mitigation strategies without hiding prior-data conflict; replicate the NHANES application; and evaluate GDS end-to-end under matched compute and data budgets.
 
 The PDF treatise provides the theoretical specification and empirical research programme. Claims of performance superiority remain subject to implementation, replication, and independent validation.

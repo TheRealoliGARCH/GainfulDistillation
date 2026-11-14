@@ -9,8 +9,12 @@ def test_diagonal_sandwich_and_sample_scaling():
         [[8.0, 0.0], [0.0, 16.0]],
         sample_size=10,
     )
-    assert result.asymptotic == pytest.approx(((2.0, 0.0), (0.0, 1.0)))
-    assert result.estimator_covariance == pytest.approx(((0.2, 0.0), (0.0, 0.1)))
+    assert result.asymptotic[0][0] == pytest.approx(2.0)
+    assert result.asymptotic[0][1] == pytest.approx(0.0)
+    assert result.asymptotic[1][0] == pytest.approx(0.0)
+    assert result.asymptotic[1][1] == pytest.approx(1.0)
+    assert result.estimator_covariance[0][0] == pytest.approx(0.2)
+    assert result.estimator_covariance[1][1] == pytest.approx(0.1)
     assert result.sample_size == 10
 
 

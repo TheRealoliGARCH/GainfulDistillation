@@ -86,7 +86,7 @@ def test_posterior_bias_diagnostic_identifies_prior_pull():
     assert diagnostic.prior_mean < diagnostic.posterior_mean < 1.0
     assert diagnostic.prior_reference_gap < 0.0
     assert diagnostic.posterior_pull_fraction > 0.0
-    assert any("displaced toward the prior" in warning for warning in diagnostic.warnings)
+    assert any("materially displaced from the likelihood-only reference" in warning for warning in diagnostic.warnings)
 
 
 def test_posterior_bias_diagnostic_is_quiet_when_posterior_tracks_reference():

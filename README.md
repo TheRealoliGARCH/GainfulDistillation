@@ -156,15 +156,21 @@ The current components remain reference primitives. Formal posterior-concentrati
 
 ### Monte Carlo experiment
 
-The experiment `experiments/normal_mean_misspecification.py` compares ordinary posterior uncertainty with the scalar balanced-loss robust standard error when data are generated from a Normal location model but the working likelihood fixes the variance at one. It reports point-estimate bias and RMSE, posterior credible-interval coverage, robust Wald-interval coverage, Monte Carlo standard errors for both coverage estimates, and the ratio of average robust variance to the frequentist sandwich variance. The default scenarios use true standard deviations of one (correct specification) and two (variance misspecification). The experiment uses the GDS Sinc prior and is therefore an adaptation of, not an exact replication of, the Normal-prior example in Li and Rice (2024).
+The experiment `experiments/normal_mean_misspecification.py` is a supplemental high-variance study. It compares ordinary posterior uncertainty with the scalar balanced-loss robust standard error under four data-generating processes: correctly specified Normal errors with SD 1; Normal variance misspecification with SD 2; Student-t(5) errors rescaled to variance 4; and independent heteroskedastic Normal errors with average variance 4. It crosses sample sizes 40, 80 and 160 with four Sinc-prior configurations. Identical simulated datasets are used for all priors within each scenario/sample-size cell (common random numbers).
+
+The standard run contains 48 cells, 100 replications per cell, and 512 midpoint-quadrature points. It records bias, RMSE, posterior and robust-Wald coverage with Monte Carlo standard errors, empirical and oracle variance ratios, and interval widths. The working likelihood is independent `Normal(theta, 1)`. The experiment uses the GDS Sinc prior and is an adaptation of, not an exact replication of, the conjugate Normal-prior example in Li and Rice (2024).
 
 Run it after installing the package:
 
 ```bash
-python experiments/normal_mean_misspecification.py
+python experiments/normal_mean_misspecification.py \
+  --sample-sizes 40 80 160 \
+  --repetitions 100 \
+  --points 512 \
+  --seed 2026111401
 ```
 
-The sample size, number of repetitions, quadrature points, seed, true parameter, and true standard deviations can be changed with command-line arguments. The robust Wald interval is a repeated-sampling interval and must not be described as a posterior credible interval.
+The robust Wald interval is a repeated-sampling interval and must not be described as a posterior credible interval. The ordinary posterior interval and robust Wald interval answer different inferential questions.
 
 ### Expanded robustness stress grid
 
@@ -196,6 +202,24 @@ python experiments/expanded_stress_grid.py \
 
 The `.github/workflows/bayesian-stress-grid.yml` workflow runs the standard design and stores the JSON output as a GitHub Actions artifact.
 The completed seed-20261115 run is also archived in `results/expanded_stress_grid_seed_20261115.json`; the interpretation and principal findings are recorded in `results/expanded_stress_grid_analysis.md`.
+
+### Supplemental high-variance and prior-paired grid
+
+The seed-2026111401 study complements the 144-cell stress grid above by deliberately raising the variance in the misspecified Normal, Student-t(5), and heteroskedastic cases. Its 48 results are archived in `results/expanded_bayesian_misspecification_seed_2026111401.json`, and the run is available at [Bayesian Misspecification Study](https://github.com/TheRealoliGARCH/GainfulDistillation/actions/runs/43588473245).
+
+For the centered diffuse prior at sample size 80, the results were:
+
+| Data-generating process | Posterior 95% coverage | Balanced-loss robust Wald 95% coverage | Robust/oracle variance ratio |
+|---|---:|---:|---:|
+| Normal, SD 1 | 96% | 93% | 0.958 |
+| Normal, SD 2 | 61% | 97% | 0.941 |
+| Student-t(5), variance 4 | 65% | 95% | 0.953 |
+| Heteroskedastic Normal, average variance 4 | 60% | 93% | 0.925 |
+
+The robust variance correction materially improves coverage under these variance-misspecified cases, and its average variance approaches the oracle repeated-sampling variance as the sample size rises from 40 to 160. These findings are specific to the simulated design and have finite Monte Carlo uncertainty.
+
+The prior-sensitivity results expose a separate limitation: at sample size 40 under the correctly specified Normal case, shifted priors produced posterior-mean bias around -0.18 and robust-Wald coverage of only 75–76%, compared with 96% for the centered diffuse prior. A variance correction does not automatically remove prior-induced location bias. GDS therefore needs to diagnose posterior mean bias and prior sensitivity separately from robust variance calibration.
+
 
 The first recorded run used seed 20261114, sample size 80, 200 replications per scenario, and 1,024 quadrature points. Results are archived at `results/normal_mean_misspecification_seed_20261114.json`.
 
@@ -233,6 +257,6 @@ The Python workflow runs tests on pushes and pull requests that change source co
 
 **Implemented:** GDS-Core structural graph, directed transmission-channel representation, online SLDE, probabilistic task routing, constrained quadratic resource allocation, Sinc covariance kernel, proper Sinc-modulated prior, one-dimensional Bayesian posterior reference engine, scalar Bayesian balanced-loss variance correction, frequentist sandwich covariance calculation, independent verification adjudication, and reproducible Normal-mean and expanded robustness Monte Carlo experiments; core components and experiment entry points have automated tests.
 
-**Next:** review the full stress-grid results; add multivariate posterior computation and matrix-valued balanced-loss extension; examine posterior concentration and prior sensitivity; replicate NHANES; and evaluate GDS end-to-end under matched compute and data budgets.
+**Next:** extend posterior computation and balanced-loss correction to multivariate parameters; develop posterior-concentration and prior-predictive diagnostics; address prior-induced bias; replicate the NHANES application; and evaluate GDS end-to-end under matched compute and data budgets.
 
 The PDF treatise provides the theoretical specification and empirical research programme. Claims of performance superiority remain subject to implementation, replication, and independent validation.

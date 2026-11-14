@@ -208,3 +208,49 @@ def test_prior_predictive_sampling_uses_finite_seed_and_preserves_statistic_shap
     assert all(-4.0 <= value <= 4.0 for value in seen)
     assert result.observed_statistic is None
     assert result.two_sided_tail_probability is None
+
+
+def test_prior_concentration_is_measured_relative_to_reference_uncertainty():
+    prior = SincModulatedPrior(location=0.0, bandwidth=1.0, scale=0.5)
+    summary = summarize_prior_1d(prior, bounds=(-4.0, 4.0), points=2048)
+    posterior = compute_posterior_1d(
+        prior, lambda theta: -0.5 * theta**2 / 25.0,
+        bounds=(-4.0, 4.0), points=2048,
+    )
+    diagnostic = assess_posterior_bias_1d(
+        summary, posterior, likelihood_reference=0.0,
+        reference_standard_error=2.0,
+        thresholds=PriorBiasThresholds(
+            max_prior_reference_gap_z=100.0,
+            max_posterior_pull_fraction=100.0,
+            max_boundary_cell_mass=1.0,
+            minimum_prior_to_reference_sd_ratio=0.5,
+        ),
+    )
+    assert diagnostic.prior_to_reference_sd_ratio < 0.5
+    assert any("Prior spread is concentrated" in warning for warning in diagnostic.warnings)
+
+
+def test_prior_concentration_threshold_is_configurable():
+    prior = SincModulatedPrior(location=0.0, bandwidth=1.0, scale=0.5)
+    summary = summarize_prior_1d(prior, bounds=(-4.0, 4.0), points=2048)
+    posterior = compute_posterior_1d(
+        prior, lambda theta: -0.5 * theta**2 / 25.0,
+        bounds=(-4.0, 4.0), points=2048,
+    )
+    diagnostic = assess_posterior_bias_1d(
+        summary, posterior, likelihood_reference=0.0,
+        reference_standard_error=2.0,
+        thresholds=PriorBiasThresholds(
+            max_prior_reference_gap_z=100.0,
+            max_posterior_pull_fraction=100.0,
+            max_boundary_cell_mass=1.0,
+            minimum_prior_to_reference_sd_ratio=0.01,
+        ),
+    )
+    assert not any("Prior spread is concentrated" in warning for warning in diagnostic.warnings)
+
+
+def test_prior_bias_thresholds_reject_invalid_concentration_ratio():
+    with pytest.raises(ValueError):
+        PriorBiasThresholds(minimum_prior_to_reference_sd_ratio=-0.1)

@@ -1,0 +1,43 @@
+name: Bayesian Prior Bias Control
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "src/gds_core/sinc_prior.py"
+      - "src/gds_core/posterior.py"
+      - "src/gds_core/prior_diagnostics.py"
+      - "experiments/prior_bias_control.py"
+      - "tests/test_prior_bias_control.py"
+      - ".github/workflows/bayesian-prior-bias-control.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  prior-bias-control:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install GDS
+        run: python -m pip install .
+      - name: Run paired prior-bias-control experiment
+        run: |
+          python experiments/prior_bias_control.py \
+            --sample-sizes 40 80 160 \
+            --repetitions 200 \
+            --points 1024 \
+            --seed 20261114 \
+            --output prior_bias_control_results.json
+      - name: Upload study results
+        uses: actions/upload-artifact@v4
+        with:
+          name: gds-prior-bias-control-results
+          path: prior_bias_control_results.json
+          if-no-files-found: error
+          retention-days: 30

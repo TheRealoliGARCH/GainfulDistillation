@@ -321,6 +321,7 @@ class PriorBiasThresholds:
     max_posterior_pull_fraction: float = 0.5
     max_boundary_cell_mass: float = 0.01
     minimum_retained_prior_mass: float = 0.99
+    minimum_prior_to_reference_sd_ratio: float = 0.5
 
     def __post_init__(self) -> None:
         values = (
@@ -328,6 +329,7 @@ class PriorBiasThresholds:
             self.max_posterior_pull_fraction,
             self.max_boundary_cell_mass,
             self.minimum_retained_prior_mass,
+            self.minimum_prior_to_reference_sd_ratio,
         )
         if any(
             isinstance(value, bool)
@@ -341,6 +343,7 @@ class PriorBiasThresholds:
             or self.max_posterior_pull_fraction < 0.0
             or not 0.0 <= self.max_boundary_cell_mass <= 1.0
             or not 0.0 < self.minimum_retained_prior_mass <= 1.0
+            or self.minimum_prior_to_reference_sd_ratio < 0.0
         ):
             raise ValueError("diagnostic thresholds are outside their allowed ranges")
 
@@ -355,6 +358,7 @@ class PosteriorBiasDiagnostic1D:
     prior_reference_gap_z: float | None
     posterior_reference_gap_z: float | None
     posterior_pull_fraction: float | None
+    prior_to_reference_sd_ratio: float | None
     boundary_cell_mass: float
     retained_prior_mass: float
     warnings: tuple[str, ...]
@@ -409,6 +413,10 @@ def assess_posterior_bias_1d(
         prior_summary.conditional_variance + reference_se**2
     )
     posterior_z = None if reference_se is None else posterior_gap / reference_se
+    prior_to_reference_sd_ratio = (
+        None if reference_se is None else
+        prior_summary.conditional_standard_deviation / reference_se
+    )
     pull_fraction = (
         None if abs(prior_gap) <= 1e-12 else posterior_gap / prior_gap
     )
@@ -418,6 +426,14 @@ def assess_posterior_bias_1d(
         warnings.append(
             "Prior mean is materially separated from the likelihood-only reference "
             "after accounting for prior and reference uncertainty."
+        )
+    if (
+        prior_to_reference_sd_ratio is not None
+        and prior_to_reference_sd_ratio < thresholds.minimum_prior_to_reference_sd_ratio
+    ):
+        warnings.append(
+            "Prior spread is concentrated relative to the likelihood-reference "
+            "standard error under the configured threshold."
         )
     if (
         pull_fraction is not None
@@ -448,6 +464,7 @@ def assess_posterior_bias_1d(
         prior_reference_gap_z=gap_z,
         posterior_reference_gap_z=posterior_z,
         posterior_pull_fraction=pull_fraction,
+        prior_to_reference_sd_ratio=prior_to_reference_sd_ratio,
         boundary_cell_mass=prior_summary.boundary_cell_mass,
         retained_prior_mass=prior_summary.retained_prior_mass,
         warnings=tuple(warnings),

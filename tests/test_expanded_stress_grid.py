@@ -29,6 +29,8 @@ def test_expanded_stress_grid_is_reproducible_and_returns_full_cell_grid():
         assert result["mean_frequentist_sandwich_se"] > 0.0
         assert 0.0 <= result["posterior_credible_interval_coverage"] <= 1.0
         assert 0.0 <= result["robust_wald_interval_coverage"] <= 1.0
+        assert 0.0 <= result["frequentist_sandwich_wald_interval_coverage"] <= 1.0
+        assert result["mle_rmse"] >= 0.0
         assert result["robust_to_empirical_sandwich_variance_ratio"] > 0.0
         assert result["robust_to_theoretical_variance_ratio"] > 0.0
 

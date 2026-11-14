@@ -221,21 +221,28 @@ def _summarise_fit(
 
     robust = balanced_loss_variance_1d(posterior, score_information)
     sandwich_variance = sample_variance / n
+    sandwich_se = sqrt(sandwich_variance)
 
     credible_lower, credible_upper = posterior.credible_interval
     robust_lower = posterior.mean - Z_975 * robust.robust_standard_error
     robust_upper = posterior.mean + Z_975 * robust.robust_standard_error
+    sandwich_lower = sample_mean - Z_975 * sandwich_se
+    sandwich_upper = sample_mean + Z_975 * sandwich_se
 
     return {
         "estimate": posterior.mean,
         "error": posterior.mean - theta_true,
+        "mle_estimate": sample_mean,
+        "mle_error": sample_mean - theta_true,
         "posterior_sd": posterior.standard_deviation,
         "robust_se": robust.robust_standard_error,
-        "sandwich_se": sqrt(sandwich_variance),
+        "sandwich_se": sandwich_se,
         "posterior_covered": float(credible_lower <= theta_true <= credible_upper),
         "robust_covered": float(robust_lower <= theta_true <= robust_upper),
+        "sandwich_wald_covered": float(sandwich_lower <= theta_true <= sandwich_upper),
         "posterior_interval_width": credible_upper - credible_lower,
         "robust_interval_width": robust_upper - robust_lower,
+        "sandwich_wald_interval_width": sandwich_upper - sandwich_lower,
         "robust_variance": robust.robust_variance,
         "sandwich_variance": sandwich_variance,
         "boundary_cell_mass": (
@@ -253,12 +260,18 @@ def _aggregate(
     repetitions: int,
 ) -> dict[str, Any]:
     errors = tuple(record["error"] for record in records)
+    mle_errors = tuple(record["mle_error"] for record in records)
     bias = mean(errors)
+    mle_bias = mean(mle_errors)
     error_sd = sqrt(
         fsum((value - bias) ** 2 for value in errors) / max(1, repetitions - 1)
     )
+    mle_error_sd = sqrt(
+        fsum((value - mle_bias) ** 2 for value in mle_errors) / max(1, repetitions - 1)
+    )
     posterior_coverage = mean(record["posterior_covered"] for record in records)
     robust_coverage = mean(record["robust_covered"] for record in records)
+    sandwich_coverage = mean(record["sandwich_wald_covered"] for record in records)
     avg_robust_variance = mean(record["robust_variance"] for record in records)
     avg_sandwich_variance = mean(record["sandwich_variance"] for record in records)
     theoretical_variance_of_mean = scenario.theoretical_variance / sample_size
@@ -281,6 +294,9 @@ def _aggregate(
         "bias": bias,
         "bias_mcse": error_sd / sqrt(repetitions),
         "rmse": sqrt(mean(value * value for value in errors)),
+        "mle_bias": mle_bias,
+        "mle_bias_mcse": mle_error_sd / sqrt(repetitions),
+        "mle_rmse": sqrt(mean(value * value for value in mle_errors)),
         "mean_posterior_sd": mean(record["posterior_sd"] for record in records),
         "mean_balanced_loss_robust_se": mean(record["robust_se"] for record in records),
         "mean_frequentist_sandwich_se": mean(record["sandwich_se"] for record in records),
@@ -292,11 +308,18 @@ def _aggregate(
         "robust_coverage_mcse": sqrt(
             robust_coverage * (1.0 - robust_coverage) / repetitions
         ),
+        "frequentist_sandwich_wald_interval_coverage": sandwich_coverage,
+        "frequentist_sandwich_coverage_mcse": sqrt(
+            sandwich_coverage * (1.0 - sandwich_coverage) / repetitions
+        ),
         "mean_posterior_credible_interval_width": mean(
             record["posterior_interval_width"] for record in records
         ),
         "mean_robust_wald_interval_width": mean(
             record["robust_interval_width"] for record in records
+        ),
+        "mean_frequentist_sandwich_wald_interval_width": mean(
+            record["sandwich_wald_interval_width"] for record in records
         ),
         "robust_to_empirical_sandwich_variance_ratio": (
             avg_robust_variance / avg_sandwich_variance

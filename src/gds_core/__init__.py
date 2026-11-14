@@ -26,8 +26,19 @@ __all__ = [
     "SLDEEstimate",
     "StudentLearningDynamicsEstimator",
     "TransmissionWeights",
+    "LearningObservation",
+    "MetricEstimate",
+    "SLDEEstimate",
+    "StudentLearningDynamicsEstimator",
     "build_adjacency_matrix",
     "student_edge_multiplicity",
     "validate_topology",
     "weighted_degree",
 ]
+
+from .slde import (
+    LearningObservation,
+    MetricEstimate,
+    SLDEEstimate,
+    StudentLearningDynamicsEstimator,
+)

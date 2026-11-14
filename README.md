@@ -42,6 +42,7 @@ This is a falsifiable research conjecture, not an established empirical result. 
 | `src/gds_core/sinc_prior.py` | Proper non-negative Sinc-modulated univariate and independent-product priors |
 | `src/gds_core/posterior.py` | One-dimensional posterior estimation with log-likelihoods, quadrature and posterior summaries |
 | `src/gds_core/balanced_loss.py` | Scalar Bayesian balanced-loss variance correction using posterior score-information averaging |
+| `experiments/normal_mean_misspecification.py` | Reproducible Monte Carlo study under correct and misspecified Normal likelihood variance |
 | `src/gds_core/sandwich.py` | General estimating-equation sandwich covariance calculation |
 | `src/gds_core/verification.py` | Provenance-aware independent claim adjudication |
 | `tests/` | Unit tests for graph, transmission, and SLDE |
@@ -152,6 +153,18 @@ The finite interval is an explicit modelling choice, not a silent numerical trun
 
 The current components remain reference primitives. Formal posterior-concentration diagnostics, multivariate inference, and empirical calibration remain separate research tasks. The code does not assert that the manuscripts' reported empirical improvements have already been independently established.
 
+### Monte Carlo experiment
+
+The experiment `experiments/normal_mean_misspecification.py` compares ordinary posterior uncertainty with the scalar balanced-loss robust standard error when data are generated from a Normal location model but the working likelihood fixes the variance at one. It reports point-estimate bias and RMSE, posterior credible-interval coverage, robust Wald-interval coverage, Monte Carlo standard errors for both coverage estimates, and the ratio of average robust variance to the frequentist sandwich variance. The default scenarios use true standard deviations of one (correct specification) and two (variance misspecification). The experiment uses the GDS Sinc prior and is therefore an adaptation of, not an exact replication of, the Normal-prior example in Li and Rice (2024).
+
+Run it after installing the package:
+
+```bash
+python experiments/normal_mean_misspecification.py
+```
+
+The sample size, number of repetitions, quadrature points, seed, true parameter, and true standard deviations can be changed with command-line arguments. The robust Wald interval is a repeated-sampling interval and must not be described as a posterior credible interval.
+
 ## Development and testing
 
 Python 3.10 or later is required:
@@ -175,7 +188,7 @@ The Python workflow runs tests on pushes and pull requests that change source co
 
 ## Implementation status
 
-**Implemented:** GDS-Core structural graph, directed transmission-channel representation, online SLDE, probabilistic task routing, constrained quadratic resource allocation, Sinc covariance kernel, proper Sinc-modulated prior, one-dimensional Bayesian posterior reference engine, scalar Bayesian balanced-loss variance correction, frequentist sandwich covariance calculation, and independent verification adjudication; each component has unit tests.
+**Implemented:** GDS-Core structural graph, directed transmission-channel representation, online SLDE, probabilistic task routing, constrained quadratic resource allocation, Sinc covariance kernel, proper Sinc-modulated prior, one-dimensional Bayesian posterior reference engine, scalar Bayesian balanced-loss variance correction, frequentist sandwich covariance calculation, independent verification adjudication, and a reproducible Normal-mean misspecification experiment; all core components and the experiment entry point have automated tests.
 
 **Next:** adaptive or higher-order posterior integration, multivariate posterior computation and matrix-valued balanced-loss extension, posterior-concentration diagnostics, coalition complementarity and coordination costs, calibration of gain and covariance estimates, and reproducible end-to-end evaluation.
 

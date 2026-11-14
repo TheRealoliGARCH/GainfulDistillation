@@ -9,6 +9,7 @@ from .graph import (
     validate_topology,
     weighted_degree,
 )
+from .posterior import Posterior1D, compute_posterior_1d
 from .resource_allocation import ResourceAllocationResult, allocate_resources
 from .routing import (
     RoutingDecision,
@@ -44,6 +45,7 @@ from .verification import (
 __all__ = [
     "ADJACENCY_MATRIX",
     "NODE_LABELS",
+    "Posterior1D",
     "STUDENT_INDICES",
     "Finding",
     "IndependentSincPrior",
@@ -67,6 +69,7 @@ __all__ = [
     "allocate_resources",
     "build_adjacency_matrix",
     "candidate_from_slde",
+    "compute_posterior_1d",
     "normalized_sinc",
     "route_task",
     "sandwich_covariance",

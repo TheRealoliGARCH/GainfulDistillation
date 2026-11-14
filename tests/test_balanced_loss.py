@@ -118,3 +118,37 @@ def test_nonposterior_argument_is_rejected():
 def test_noncallable_callback_is_rejected():
     with pytest.raises(TypeError):
         balanced_loss_variance_1d(_posterior(), 4)
+
+
+
+def test_balanced_loss_tracks_sandwich_variance_under_scale_misspecification():
+    # Deterministic repeated pattern with empirical variance near four.
+    # The working likelihood assumes a unit observation variance.
+    observations = tuple(
+        value
+        for _ in range(100)
+        for value in (-3.0, -1.0, 0.0, 1.0, 3.0)
+    )
+    n = len(observations)
+    sample_mean = sum(observations) / n
+    sample_variance = sum((value - sample_mean) ** 2 for value in observations) / (n - 1)
+
+    prior = SincModulatedPrior(
+        location=0.0, bandwidth=1.0, scale=2.0, modulation_depth=0.0
+    )
+    posterior = compute_posterior_1d(
+        prior,
+        lambda theta: -0.5 * sum((value - theta) ** 2 for value in observations),
+        bounds=(-5.0, 5.0),
+        points=4096,
+    )
+    result = balanced_loss_variance_1d(
+        posterior,
+        lambda theta: (tuple(value - theta for value in observations), 1.0),
+    )
+
+    frequentist_sandwich_variance = sample_variance / n
+    assert posterior.variance < 0.35 * frequentist_sandwich_variance
+    assert result.robust_variance == pytest.approx(
+        frequentist_sandwich_variance, rel=0.01
+    )

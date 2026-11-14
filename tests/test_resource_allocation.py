@@ -49,7 +49,9 @@ def test_correlated_covariance_changes_risk_penalty():
         ["S1", "S2"], [1.0, 1.0], [[1.0, 0.8], [0.8, 1.0]], 1.0,
         risk_aversion=2.0, regularization=0.1,
     )
-    assert correlated.covariance_penalty > diagonal.covariance_penalty
+    diagonal_allocations = dict(diagonal.allocations)
+    correlated_allocations = dict(correlated.allocations)
+    assert all(correlated_allocations[key] < diagonal_allocations[key] for key in diagonal_allocations)
     assert correlated.objective_value < diagonal.objective_value
 
 

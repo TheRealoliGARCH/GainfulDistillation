@@ -19,6 +19,7 @@ The initial architecture contains one teacher and five students. The students fo
 - **Robust covariance diagnostics:** compute estimating-equation sandwich covariance when sensitivity and variability matrices are supplied.
 - **Band-limited modelling:** provide a Sinc covariance kernel for Gaussian-process models.
 - **Proper Sinc-based priors:** provide a non-negative, analytically normalised, Sinc-modulated prior with finite second moment.
+- **Bayesian posterior estimation:** provide a stable one-dimensional posterior reference engine using explicit finite-domain midpoint quadrature.
 
 ## Principal research conjecture
 
@@ -38,6 +39,7 @@ This is a falsifiable research conjecture, not an established empirical result. 
 | `src/gds_core/resource_allocation.py` | Constrained quadratic resource allocation |
 | `src/gds_core/sinc_kernel.py` | Band-limited Sinc covariance kernel for Gaussian-process models |
 | `src/gds_core/sinc_prior.py` | Proper non-negative Sinc-modulated univariate and independent-product priors |
+| `src/gds_core/posterior.py` | One-dimensional posterior estimation with log-likelihoods, quadrature and posterior summaries |
 | `src/gds_core/sandwich.py` | General estimating-equation sandwich covariance calculation |
 | `src/gds_core/verification.py` | Provenance-aware independent claim adjudication |
 | `tests/` | Unit tests for graph, transmission, and SLDE |
@@ -139,7 +141,9 @@ The identity follows from the Fourier transform of `sinc(u)^4`, which is the con
 
 Pointwise bounds on posterior densities do not alone establish weak convergence to a Dirac measure. A rigorous posterior-concentration argument should use probability measures, neighbourhood probabilities, or an appropriate weak-convergence criterion. The balanced inference loss in the second manuscript is not, by itself, a fully specified robust covariance algorithm; model-specific derivation and validation remain necessary.
 
-The Sinc prior implemented here is a proper prior primitive, not yet a complete Bayesian posterior engine. The likelihood, posterior computation, balanced-loss correction, convergence diagnostics, and empirical calibration remain separate research tasks. The current primitives do not assert that the manuscripts' reported empirical improvements have already been independently established.
+The Sinc prior implemented here is a proper prior primitive. The module `posterior.py` now adds a one-dimensional Bayesian posterior reference engine. It accepts a log-likelihood callback, conditions the prior on an explicitly declared finite parameter interval, and uses equally spaced midpoint quadrature with log-sum-exp normalisation. It returns cell probabilities and densities, posterior mean and variance, a central credible interval, and the log marginal likelihood under the prior conditioned on that interval.
+
+The finite interval is an explicit modelling choice, not a silent numerical truncation. The result is conditional on the parameter lying within the declared bounds. Grid-refinement checks are necessary for each application; this deterministic one-dimensional implementation is not a multivariate posterior sampler. The balanced-loss correction, formal convergence diagnostics, and empirical calibration remain separate research tasks. The current primitives do not assert that the manuscripts' reported empirical improvements have already been independently established.
 
 ## Development and testing
 
@@ -164,8 +168,8 @@ The Python workflow runs tests on pushes and pull requests that change source co
 
 ## Implementation status
 
-**Implemented:** GDS-Core structural graph, directed transmission-channel representation, online SLDE, probabilistic task routing, constrained quadratic resource allocation, Sinc covariance kernel, proper Sinc-modulated prior, sandwich covariance calculation, and independent verification adjudication; each component has unit tests.
+**Implemented:** GDS-Core structural graph, directed transmission-channel representation, online SLDE, probabilistic task routing, constrained quadratic resource allocation, Sinc covariance kernel, proper Sinc-modulated prior, one-dimensional Bayesian posterior reference engine, sandwich covariance calculation, and independent verification adjudication; each component has unit tests.
 
-**Next:** a fully derived Bayesian balanced-loss estimator, posterior-concentration diagnostics, coalition complementarity and coordination costs, calibration of gain and covariance estimates, and reproducible end-to-end evaluation.
+**Next:** a fully derived Bayesian balanced-loss estimator, adaptive or higher-order posterior integration, multivariate posterior computation, posterior-concentration diagnostics, coalition complementarity and coordination costs, calibration of gain and covariance estimates, and reproducible end-to-end evaluation.
 
 The PDF treatise provides the theoretical specification and empirical research programme. Claims of performance superiority remain subject to implementation, replication, and independent validation.

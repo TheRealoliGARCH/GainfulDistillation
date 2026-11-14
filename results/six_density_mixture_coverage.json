@@ -1,0 +1,105 @@
+{
+  "method": "SciPy brentq pairwise crossings + scipy.integrate.quad (QUADPACK)",
+  "scipy_version": "1.17.0",
+  "direct_numpy_api_used": false,
+  "mixture_definition": "w_i >= 0 and sum_i(w_i) = 1",
+  "geometry": "union of graphs of all six-PDF convex mixtures",
+  "x_domain": [
+    -1,
+    1
+  ],
+  "y_domain": [
+    0,
+    1
+  ],
+  "rectangle_area": 2,
+  "scan_intervals_per_pair": 16384,
+  "pairwise_crossings_found_excluding_endpoints": 29,
+  "mahaloy_cusps_integration_splits": [
+    0.6266570686577501,
+    0.8862269254527579
+  ],
+  "envelope_segments_on_positive_half": [
+    {
+      "start": 0,
+      "end": 0.35828713802916273,
+      "upper": "Mahaloy",
+      "lower": "Madras",
+      "span_integral_on_positive_half": 0.2888741047651541,
+      "quad_error_estimate": 3.2071468232825376e-15
+    },
+    {
+      "start": 0.35828713802916273,
+      "end": 0.41121207506320845,
+      "upper": "Mahaloy",
+      "lower": "Cup",
+      "span_integral_on_positive_half": 0.019129090592766847,
+      "quad_error_estimate": 2.1237556816230237e-16
+    },
+    {
+      "start": 0.41121207506320845,
+      "end": 0.45199667086753953,
+      "upper": "Mahaloy",
+      "lower": "Ghosh",
+      "span_integral_on_positive_half": 0.012668645693131596,
+      "quad_error_estimate": 1.4065022139333025e-16
+    },
+    {
+      "start": 0.45199667086753953,
+      "end": 0.6151039673335112,
+      "upper": "Madras",
+      "lower": "Ghosh",
+      "span_integral_on_positive_half": 0.11202115462084374,
+      "quad_error_estimate": 1.2436846510515546e-15
+    },
+    {
+      "start": 0.6151039673335112,
+      "end": 0.8309953410396078,
+      "upper": "Madras",
+      "lower": "Mahaloy",
+      "span_integral_on_positive_half": 0.17283265112093138,
+      "quad_error_estimate": 1.918827886814649e-15,
+      "integration_split_points": [
+        0.6151039673335112,
+        0.6266570686577501,
+        0.8309953410396078
+      ]
+    },
+    {
+      "start": 0.8309953410396078,
+      "end": 0.8632487021161243,
+      "upper": "Ghosh",
+      "lower": "Mahaloy",
+      "span_integral_on_positive_half": 0.022275180002161093,
+      "quad_error_estimate": 2.473041771606909e-16
+    },
+    {
+      "start": 0.8632487021161243,
+      "end": 0.9585089402962588,
+      "upper": "Cup",
+      "lower": "Mahaloy",
+      "span_integral_on_positive_half": 0.06939497353979276,
+      "quad_error_estimate": 7.704389741713144e-16,
+      "integration_split_points": [
+        0.8632487021161243,
+        0.8862269254527579,
+        0.9585089402962588
+      ]
+    },
+    {
+      "start": 0.9585089402962588,
+      "end": 1,
+      "upper": "Cup",
+      "lower": "Ghosh",
+      "span_integral_on_positive_half": 0.03537019497328217,
+      "quad_error_estimate": 3.926880484481884e-16
+    }
+  ],
+  "positive_half_envelope_span_integral": 0.7325659953080637,
+  "covered_area": 1.4651319906161273,
+  "coverage_fraction": 0.7325659953080637,
+  "coverage_percentage": 73.25659953080637,
+  "uncovered_area": 0.5348680093838727,
+  "uncovered_percentage": 26.743400469193634,
+  "positive_half_quadrature_error_estimate": 8.133116350484567e-15
+}

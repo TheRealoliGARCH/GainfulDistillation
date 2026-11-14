@@ -35,6 +35,7 @@ from gds_core.balanced_loss import (
 from gds_core.posterior import compute_posterior_1d
 from gds_core.prior_diagnostics import (
     PriorBiasThresholds,
+    PriorSummary1D,
     assess_posterior_bias_1d,
     summarize_prior_1d,
 )
@@ -200,7 +201,7 @@ def _summarise_fit(
     *,
     theta_true: float,
     prior: SincModulatedPrior,
-    prior_summary,
+    prior_summary: PriorSummary1D,
     bounds: tuple[float, float],
     points: int,
     bias_thresholds: PriorBiasThresholds,

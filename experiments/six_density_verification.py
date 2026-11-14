@@ -1,152 +1,167 @@
-"""Reproducible numerical audit of the six densities in the supplied PDF.
+"""SciPy verification of the six densities in Six Probability Density Functions.
 
-The Mahaloy expression uses the unnormalised sinc convention sin(u)/u,
-which is consistent with its printed normaliser and plotted zero locations.
-Only the Python standard library is required.
+No NumPy API is used directly. SciPy's QUADPACK integrator and special
+functions are used to evaluate normalisers, integrals, moments, and peaks.
+
+The Mahaloy paper writes sinc(8*x**2) but does not define the convention.
+The displayed normaliser and plot zeros agree with sinc(u)=sin(u)/u, which
+is the convention explicitly implemented here.
 """
+from __future__ import annotations
+
 import json
 import math
+from typing import Callable
 
-TOL = 2.0e-11
+import scipy
+from scipy.integrate import quad
+from scipy.special import erf, erfi, fresnel, gamma
 
-
-def _adaptive_simpson(f, a, b, tolerance=TOL, depth=22):
-    if a == b:
-        return 0.0
-    m = (a + b) / 2.0
-    fa, fm, fb = f(a), f(m), f(b)
-    whole = (b - a) * (fa + 4.0 * fm + fb) / 6.0
-
-    def recurse(left, right, fl, fc, fr, old, tol, remaining):
-        mid = (left + right) / 2.0
-        q1, q3 = (left + mid) / 2.0, (mid + right) / 2.0
-        fq1, fq3 = f(q1), f(q3)
-        first = (mid - left) * (fl + 4.0 * fq1 + fc) / 6.0
-        second = (right - mid) * (fc + 4.0 * fq3 + fr) / 6.0
-        refined = first + second
-        delta = refined - old
-        if remaining <= 0 or abs(delta) <= 15.0 * tol:
-            return refined + delta / 15.0
-        return recurse(left, mid, fl, fq1, fc, first, tol / 2, remaining - 1) + recurse(
-            mid, right, fc, fq3, fr, second, tol / 2, remaining - 1
-        )
-
-    return recurse(a, b, fa, fm, fb, whole, tolerance, depth)
+EPSABS = 1.0e-12
+EPSREL = 1.0e-12
+LIMIT = 500
 
 
-def _integrate(f, points):
-    points = tuple(points)
-    tol = TOL / (len(points) - 1)
-    return sum(
-        _adaptive_simpson(f, a, b, tolerance=tol)
-        for a, b in zip(points, points[1:])
-    )
+def fresnel_c(x: float) -> float:
+    """C(x) = integral_0^x cos(pi*t**2/2) dt."""
+    _, c_value = fresnel(x)
+    return float(c_value)
 
 
-def fresnel_c(x):
-    sign = -1.0 if x < 0 else 1.0
-    return sign * _adaptive_simpson(
-        lambda t: math.cos(math.pi * t * t / 2), 0.0, abs(x)
-    )
+def fresnel_s(x: float) -> float:
+    """S(x) = integral_0^x sin(pi*t**2/2) dt."""
+    s_value, _ = fresnel(x)
+    return float(s_value)
 
 
-def fresnel_s(x):
-    sign = -1.0 if x < 0 else 1.0
-    return sign * _adaptive_simpson(
-        lambda t: math.sin(math.pi * t * t / 2), 0.0, abs(x)
-    )
+def sinc_unnormalised(u: float) -> float:
+    """Unnormalised sinc: sin(u)/u, continuously extended at zero."""
+    if u == 0.0:
+        return 1.0
+    return math.sin(u) / u
 
 
-def erfi_one():
-    # erfi(1) = 2/sqrt(pi) * sum_{n>=0} 1/(n!*(2n+1)).
-    total, term = 0.0, 1.0
-    for n in range(100):
-        addend = term / (2 * n + 1)
-        total += addend
-        if abs(addend) < 2e-17:
-            break
-        term /= n + 1
-    return 2.0 * total / math.sqrt(math.pi)
-
-
-def verify_six_densities():
-    root_pi = math.sqrt(math.pi)
-    normalisers = {
-        "Ghosh": 2.0 * (1.0 + fresnel_c(math.sqrt(6)) / math.sqrt(6)),
+def _normalising_constants() -> dict[str, float]:
+    sqrt_pi = math.sqrt(math.pi)
+    return {
+        "Ghosh": 2.0 * (1.0 + fresnel_c(math.sqrt(6.0)) / math.sqrt(6.0)),
         "Mahaloy": 0.25 * (
-            -math.sin(8)
-            - 8 * root_pi * fresnel_c(2)
-            + 8 * root_pi * fresnel_c(math.sqrt(2))
-            + 4 * root_pi * fresnel_c(4 / root_pi)
+            -math.sin(8.0)
+            - 8.0 * sqrt_pi * fresnel_c(2.0)
+            + 8.0 * sqrt_pi * fresnel_c(math.sqrt(2.0))
+            + 4.0 * sqrt_pi * fresnel_c(4.0 / sqrt_pi)
         ),
-        "Madras": math.sqrt(2) * fresnel_s(math.sqrt(2)),
-        "Temple bell": 2 * math.gamma(5 / 4),
-        "Rocket cone": root_pi * math.erf(1),
-        "Cup": root_pi * erfi_one(),
+        "Madras": math.sqrt(2.0) * fresnel_s(math.sqrt(2.0)),
+        "Temple bell": 2.0 * float(gamma(5.0 / 4.0)),
+        "Rocket cone": sqrt_pi * float(erf(1.0)),
+        "Cup": sqrt_pi * float(erfi(1.0)),
     }
 
-    def compact(kernel, normaliser):
-        return lambda x: kernel(x) / normaliser if abs(x) <= 1 else 0.0
 
-    sinc = lambda u: 1.0 if u == 0 else math.sin(u) / u
-    pdfs = {
-        "Ghosh": compact(lambda x: 1 + math.cos(3 * math.pi * x * x),
-                        normalisers["Ghosh"]),
-        "Mahaloy": compact(lambda x: abs(sinc(8 * x * x)),
-                           normalisers["Mahaloy"]),
-        "Madras": compact(lambda x: abs(math.sin(math.pi * x * x)),
-                          normalisers["Madras"]),
-        "Temple bell": lambda x: math.exp(-(x ** 4)) / normalisers["Temple bell"],
-        "Rocket cone": compact(lambda x: math.exp(-(x * x)),
-                               normalisers["Rocket cone"]),
-        "Cup": compact(lambda x: math.exp(x * x), normalisers["Cup"]),
-    }
-    roots = (0.0, math.sqrt(math.pi / 8), math.sqrt(math.pi / 4), 1.0)
-    grids = {
-        "Ghosh": (0.0, 1.0),
-        "Mahaloy": roots,
-        "Madras": (0.0, 1.0),
-        "Temple bell": (0.0, 1.0, 2.0, 4.0, 8.0, 12.0),
-        "Rocket cone": (0.0, 1.0),
-        "Cup": (0.0, 1.0),
-    }
-    kernel_peaks = {
-        "Ghosh": 2.0, "Mahaloy": 1.0, "Madras": 1.0,
-        "Temple bell": 1.0, "Rocket cone": 1.0, "Cup": math.e,
-    }
-    results = {}
-    for name, pdf in pdfs.items():
-        grid = grids[name]
+def _kernel(name: str) -> Callable[[float], float]:
+    if name == "Ghosh":
+        # cos(3*pi*x**2) + cos(2*pi) = cos(3*pi*x**2) + 1.
+        return lambda x: 1.0 + math.cos(3.0 * math.pi * x * x)
+    if name == "Mahaloy":
+        return lambda x: abs(sinc_unnormalised(8.0 * x * x))
+    if name == "Madras":
+        return lambda x: abs(math.sin(math.pi * x * x))
+    if name == "Temple bell":
+        return lambda x: math.exp(-(x**4))
+    if name == "Rocket cone":
+        return lambda x: math.exp(-(x * x))
+    if name == "Cup":
+        return lambda x: math.exp(x * x)
+    raise KeyError(name)
 
-        def moment(power):
-            return 2.0 * _integrate(lambda x: x ** power * pdf(x), grid)
 
-        variance, fourth = moment(2), moment(4)
-        peak = kernel_peaks[name] / normalisers[name]
+def _quad_half(
+    name: str,
+    integrand: Callable[[float], float],
+) -> tuple[float, float]:
+    """Integrate over the nonnegative half-domain, returning value and QUADPACK error."""
+    if name == "Temple bell":
+        value, error = quad(
+            integrand, 0.0, math.inf,
+            epsabs=EPSABS, epsrel=EPSREL, limit=LIMIT,
+        )
+    elif name == "Mahaloy":
+        # The absolute sinc kernel changes formula at its two interior zeros.
+        split_points = (math.sqrt(math.pi / 8.0), math.sqrt(math.pi / 4.0))
+        value, error = quad(
+            integrand, 0.0, 1.0, points=split_points,
+            epsabs=EPSABS, epsrel=EPSREL, limit=LIMIT,
+        )
+    else:
+        value, error = quad(
+            integrand, 0.0, 1.0,
+            epsabs=EPSABS, epsrel=EPSREL, limit=LIMIT,
+        )
+    return float(value), float(error)
+
+
+def verify_six_densities() -> dict[str, object]:
+    constants = _normalising_constants()
+    peaks = {
+        "Ghosh": 2.0 / constants["Ghosh"],
+        "Mahaloy": 1.0 / constants["Mahaloy"],
+        "Madras": 1.0 / constants["Madras"],
+        "Temple bell": 1.0 / constants["Temple bell"],
+        "Rocket cone": 1.0 / constants["Rocket cone"],
+        "Cup": math.e / constants["Cup"],
+    }
+
+    results: dict[str, dict[str, float | bool]] = {}
+    for name, normaliser in constants.items():
+        kernel = _kernel(name)
+        raw_half, raw_error_half = _quad_half(name, kernel)
+        raw_integral = 2.0 * raw_half
+        raw_error = 2.0 * raw_error_half
+
+        second_half, second_error = _quad_half(
+            name, lambda x, k=kernel, d=normaliser: x**2 * k(x) / d
+        )
+        fourth_half, fourth_error = _quad_half(
+            name, lambda x, k=kernel, d=normaliser: x**4 * k(x) / d
+        )
+        variance = 2.0 * second_half
+        fourth_moment = 2.0 * fourth_half
         results[name] = {
-            "normalising_constant": normalisers[name],
-            "integral_numeric": moment(0),
-            "peak_density": peak,
-            "mean": 0.0,
+            "normalising_constant": normaliser,
+            "raw_kernel_integral": raw_integral,
+            "raw_kernel_integral_quad_error": raw_error,
+            "normalised_density_integral": raw_integral / normaliser,
             "variance": variance,
-            "fourth_moment": fourth,
-            "kurtosis": fourth / variance ** 2,
-            "strictly_below_one": peak < 1.0,
+            "variance_quad_error": 2.0 * second_error,
+            "fourth_moment": fourth_moment,
+            "fourth_moment_quad_error": 2.0 * fourth_error,
+            "kurtosis": fourth_moment / (variance * variance),
+            "mean": 0.0,
+            "peak_density": peaks[name],
+            "peak_strictly_below_one": peaks[name] < 1.0,
         }
 
+    mahaloy_formula_error = (
+        results["Mahaloy"]["raw_kernel_integral"]
+        - results["Mahaloy"]["normalising_constant"]
+    )
     return {
-        "method": "adaptive Simpson quadrature; symmetry; split at Mahaloy zeros",
-        "sinc_convention": "sinc(u) = sin(u)/u (unnormalised)",
-        "results": results,
-        "all_integrals_within_1e-8_of_one": all(
-            abs(row["integral_numeric"] - 1.0) < 1e-8
+        "verification_engine": "SciPy scipy.integrate.quad (QUADPACK)",
+        "scipy_version": scipy.__version__,
+        "direct_numpy_api_used": False,
+        "quadrature_tolerances": {"epsabs": EPSABS, "epsrel": EPSREL, "limit": LIMIT},
+        "sinc_convention": "unnormalised sinc(u)=sin(u)/u, sinc(0)=1",
+        "mahaloy_normaliser_minus_direct_integral": mahaloy_formula_error,
+        "all_normalised_integrals_within_1e-10_of_one": all(
+            abs(float(row["normalised_density_integral"]) - 1.0) < 1.0e-10
             for row in results.values()
         ),
-        "all_peaks_strictly_below_one": all(
-            row["strictly_below_one"] for row in results.values()
+        "all_peak_values_strictly_below_one": all(
+            bool(row["peak_strictly_below_one"]) for row in results.values()
         ),
-        "cup_peak_is_strictly_below_one": results["Cup"]["peak_density"] < 1.0,
-        "cup_normaliser_minus_e": normalisers["Cup"] - math.e,
+        "cup_peak_strictly_below_one": bool(results["Cup"]["peak_strictly_below_one"]),
+        "cup_normaliser_minus_e": constants["Cup"] - math.e,
+        "results": results,
     }
 
 

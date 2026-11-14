@@ -442,7 +442,7 @@ def assess_posterior_bias_1d(
     ):
         warnings.append(
             "Posterior mean remains materially displaced from the likelihood-only reference "
-            "relative to the likelihood-only reference."
+            "relative to the prior-reference gap; inspect potential shrinkage or overshoot."
         )
     if prior_summary.boundary_cell_mass > thresholds.max_boundary_cell_mass:
         warnings.append(

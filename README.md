@@ -9,12 +9,12 @@ The initial architecture contains one teacher and five students. The students fo
 ## Central components
 
 - **Adaptive knowledge transmission:** distinct teacher-to-student, student-to-teacher, and peer-to-peer channels.
-- **Student Learning Dynamics Estimator (SLDE):** maintains student–domain–method-specific online estimates of learning response, with optional descriptive estimates for retention, transfer, Breadth, and Depth.
-- **Specialist task allocation:** intended to route tasks to individual students or collaborative coalitions.
+- **Student Learning Dynamics Estimator (SLDE):** estimates student-, domain-, and method-specific learning responses, with separate tracking of retention, transfer, Breadth, Depth, and uncertainty.
+- **Specialist task allocation:** routes tasks to individual students or collaborative coalitions.
 - **Independent learning:** protects each student's capacity to investigate beyond teacher and peer information.
-- **Resource allocation:** intended to allocate compute according to expected marginal verified gain, covariance, cost, and risk.
-- **Stability and diversity controls:** intended to constrain error propagation and reduce epistemic collapse.
-- **External validation and governance:** intended to distinguish transmission, investigation, verification, and integration.
+- **Resource allocation:** allocates compute according to expected marginal verified gain, covariance, cost, and risk.
+- **Stability and diversity controls:** constrain error propagation and reduce epistemic collapse.
+- **External validation and governance:** distinguish transmission, investigation, verification, and integration.
 
 ## Principal research conjecture
 
@@ -26,53 +26,48 @@ This is a falsifiable research conjecture, not an established empirical result. 
 
 | Path | Description |
 |---|---|
-| `1. The Theory of Gainful Distillation.pdf` | Existing treatise (PDF manuscript) |
+| `1. The Theory of Gainful Distillation.pdf` | Published theoretical treatise |
 | `src/gds_core/graph.py` | Fixed six-agent structural topology |
-| `src/gds_core/transmission.py` | Directed adaptive transmission-channel representation |
+| `src/gds_core/transmission.py` | Directed adaptive transmission channels |
 | `src/gds_core/slde.py` | Online Student Learning Dynamics Estimator |
-| `tests/test_graph.py` | Structural topology tests |
-| `tests/test_transmission.py` | Directed transmission tests |
-| `tests/test_slde.py` | SLDE estimation and validation tests |
+| `tests/` | Unit tests for graph, transmission, and SLDE |
 | `pyproject.toml` | Python package and test configuration |
-| `.github/workflows/python-tests.yml` | Python test workflow |
+| `.github/workflows/python-tests.yml` | Automated Python test workflow |
 | `LICENSE` | Repository license |
 
-The PDF is retained as the manuscript artifact. This repository does not contain a LaTeX source file or a LaTeX build workflow.
-
-## GDS-Core: structural topology
+## GDS-Core: structural conventions
 
 The node order is (T, S1, S2, S3, S4, S5). The student subgraph contains all ten edges of K5. The additional circumferential overlay adds one further unit of multiplicity to each of the five perimeter pairs.
 
 Consequently:
-
 - There are six vertices and fifteen distinct undirected vertex pairs.
 - The five teacher–student pairs each have multiplicity one.
 - Five student perimeter pairs have multiplicity two; five student diagonals have multiplicity one.
 - Total undirected edge multiplicity is twenty.
 - The teacher's weighted degree is five; each student's weighted degree is seven.
 
-The structural adjacency matrix is symmetric and fixed. The transmission matrix is directed and dynamic. Its convention is `W[source][target]`; therefore teacher-to-student and student-to-teacher strengths are independently parameterised. Peer transmission is the structural multiplicity multiplied by a directed peer-channel multiplier.
+The structural adjacency matrix is symmetric and fixed. The transmission matrix is directed and dynamic. Its convention is W[source][target]; teacher-to-student and student-to-teacher strengths are independently parameterised. Peer transmission is the structural multiplicity multiplied by a directed peer-channel multiplier.
 
-## Student Learning Dynamics Estimator
+## SLDE: estimation conventions
 
-The SLDE maintains a separate profile for each student–domain–method tuple. Its current learning-response estimator uses scalar recursive least squares (RLS) to model performance change as a function of positive instructional dose:
+SLDE maintains a separate profile for each student × domain × instructional-method combination. The initial response model is:
 
-`performance\_after - performance\_before = learning\_rate × instructional\_dose + residual.`
+`performance_change = learning_rate × instructional_dose + innovation`
 
-The forgetting factor is configurable; a value of one gives ordinary RLS, while a value below one discounts older observations. Retention, transfer, Breadth, and Depth are tracked as optional bounded observations using online descriptive moments. Missing metric values are left missing rather than imputed as zero.
+The learning-rate coefficient is updated by scalar recursive least squares (RLS). A forgetting factor of one gives ordinary RLS; values below one discount older observations. Retention, transfer, Breadth, and Depth are tracked as separate optional bounded measurements, using online means and sample variances. Missing measurements are not imputed as zero.
 
-These estimates are implementation-level statistical summaries, not validated measures of general intelligence or universal learning ability. In particular, the scalar response model and its uncertainty estimates require further specification, simulation, calibration, and empirical evaluation before being used for consequential task or resource allocation.
+Performance and auxiliary metric scores are currently expected to be normalised to [0, 1], and instructional dose must be strictly positive. These are implementation conventions, not claims that every real-world learning measure is naturally bounded or directly comparable. Empirical work must establish valid measurement instruments, score comparability, and the causal interpretation of instructional dose.
 
 ## Development and testing
 
-Python 3.10 or later is required. Install the development dependency and run the test suite:
+Python 3.10 or later is required:
 
 ```bash
 python -m pip install -e ".[dev]"
 python -m pytest
 ```
 
-The Python workflow runs the test suite on pushes and pull requests that change source code, tests, or project configuration.
+The Python workflow runs tests on pushes and pull requests that change source code, tests, or project configuration.
 
 ## Research discipline
 
@@ -86,8 +81,8 @@ The Python workflow runs the test suite on pushes and pull requests that change 
 
 ## Implementation status
 
-**Implemented:** GDS-Core structural graph, directed transmission-channel representation, online SLDE with scalar RLS and optional descriptive metric tracking, and unit tests for these components.
+**Implemented:** GDS-Core structural graph, directed transmission-channel representation, and the first SLDE estimator with unit tests.
 
-**Next:** specialist task routing, resource optimisation, external validation, stability and diversity controls, and reproducible end-to-end evaluation.
+**Next:** specialist task routing, resource optimisation, external validation, and reproducible evaluation.
 
-The treatise provides a theoretical specification and empirical research programme. Claims of performance superiority remain subject to implementation, replication, and independent validation.
+The PDF treatise provides the theoretical specification and empirical research programme. Claims of performance superiority remain subject to implementation, replication, and independent validation.

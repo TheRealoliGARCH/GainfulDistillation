@@ -13,7 +13,7 @@ import random
 from typing import Callable
 
 from .posterior import Posterior1D
-from .sinc_prior import SincModulatedPrior
+from .sinc_prior import SincModulatedPrior, SincPriorMixture
 
 
 def _validate_bounds(bounds: tuple[float, float]) -> tuple[float, float]:
@@ -91,7 +91,7 @@ class PriorSummary1D:
 
 
 def summarize_prior_1d(
-    prior: SincModulatedPrior,
+    prior: SincModulatedPrior | SincPriorMixture,
     *,
     bounds: tuple[float, float],
     points: int = 8192,
@@ -102,8 +102,8 @@ def summarize_prior_1d(
     retained_prior_mass is the prior probability inside bounds before
     conditioning. Moments and quantiles are conditional on those bounds.
     """
-    if not isinstance(prior, SincModulatedPrior):
-        raise TypeError("prior must be a SincModulatedPrior")
+    if not isinstance(prior, (SincModulatedPrior, SincPriorMixture)):
+        raise TypeError("prior must be a SincModulatedPrior or SincPriorMixture")
     lower, upper = _validate_bounds(bounds)
     points = _validate_points(points)
     if isinstance(credible_level, bool):
@@ -173,7 +173,7 @@ class PriorPredictiveResult1D:
 
 
 def prior_predictive_check_1d(
-    prior: SincModulatedPrior,
+    prior: SincModulatedPrior | SincPriorMixture,
     simulate_statistic: Callable[[float, random.Random], float],
     *,
     bounds: tuple[float, float],
@@ -438,10 +438,10 @@ def assess_posterior_bias_1d(
     if (
         pull_fraction is not None
         and abs(prior_gap) > 1e-12
-        and pull_fraction > thresholds.max_posterior_pull_fraction
+        and abs(pull_fraction) > thresholds.max_posterior_pull_fraction
     ):
         warnings.append(
-            "Posterior mean remains materially displaced toward the prior "
+            "Posterior mean remains materially displaced from the likelihood-only reference "
             "relative to the likelihood-only reference."
         )
     if prior_summary.boundary_cell_mass > thresholds.max_boundary_cell_mass:

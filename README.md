@@ -214,7 +214,7 @@ python experiments/prior_bias_control.py \
 ```
 
 The GitHub Actions workflow `.github/workflows/bayesian-prior-bias-control.yml`
-runs this paired design and stores the JSON output as a build artifact.
+runs this paired design, stores the JSON output as a build artifact, and archives the fixed-seed results at `results/prior_bias_control_seed_20261114.json`. The detailed analysis is in [the prior-bias-control report](results/prior_bias_control_analysis.md).
 
 ### Monte Carlo experiment
 

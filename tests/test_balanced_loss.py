@@ -152,3 +152,56 @@ def test_balanced_loss_tracks_sandwich_variance_under_scale_misspecification():
     assert result.robust_variance == pytest.approx(
         frequentist_sandwich_variance, rel=0.01
     )
+
+
+
+def test_aggregate_score_summary_matches_individual_score_vector():
+    from gds_core.balanced_loss import ScalarScoreSummary
+
+    posterior = _posterior()
+    individual = balanced_loss_variance_1d(
+        posterior,
+        lambda theta: ((0.5 + theta, -1.0 + theta, 2.0 - theta), 1.5),
+    )
+    aggregate = balanced_loss_variance_1d(
+        posterior,
+        lambda theta: (
+            ScalarScoreSummary(
+                3,
+                ((0.5 + theta) ** 2 + (-1.0 + theta) ** 2 + (2.0 - theta) ** 2) / 3.0,
+            ),
+            1.5,
+        ),
+    )
+    assert aggregate == individual
+
+
+@pytest.mark.parametrize(
+    "sample_size,mean_squared_score",
+    [
+        (0, 1.0),
+        (-1, 1.0),
+        (True, 1.0),
+        (2, -1.0),
+        (2, float("nan")),
+        (2, float("inf")),
+        (2, True),
+    ],
+)
+def test_scalar_score_summary_rejects_invalid_values(sample_size, mean_squared_score):
+    from gds_core.balanced_loss import ScalarScoreSummary
+
+    with pytest.raises(ValueError):
+        ScalarScoreSummary(sample_size, mean_squared_score)
+
+
+def test_balanced_loss_accepts_aggregate_score_summary_with_constant_n():
+    from gds_core.balanced_loss import ScalarScoreSummary
+
+    posterior = _posterior()
+    result = balanced_loss_variance_1d(
+        posterior,
+        lambda theta: (ScalarScoreSummary(7, (theta - 0.2) ** 2 + 1.0), 1.0),
+    )
+    assert result.sample_size == 7
+    assert result.robust_variance > 0.0

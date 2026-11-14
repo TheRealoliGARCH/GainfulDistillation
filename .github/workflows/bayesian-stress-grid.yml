@@ -9,7 +9,10 @@ on:
       - "src/gds_core/sinc_prior.py"
       - "experiments/expanded_stress_grid.py"
       - "tests/test_expanded_stress_grid.py"
-      - ".github/workflows/bayesian-stress-grid.yml"
+
+concurrency:
+  group: gds-bayesian-stress-grid-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: write

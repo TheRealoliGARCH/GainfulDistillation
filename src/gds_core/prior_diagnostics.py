@@ -315,9 +315,34 @@ def prior_predictive_check_1d(
 
 @dataclass(frozen=True)
 class PriorBiasThresholds:
+    """Configurable warning thresholds, not universal statistical cutoffs."""
+
     max_prior_reference_gap_z: float = 2.0
     max_posterior_pull_fraction: float = 0.5
     max_boundary_cell_mass: float = 0.01
+    minimum_retained_prior_mass: float = 0.99
+
+    def __post_init__(self) -> None:
+        values = (
+            self.max_prior_reference_gap_z,
+            self.max_posterior_pull_fraction,
+            self.max_boundary_cell_mass,
+            self.minimum_retained_prior_mass,
+        )
+        if any(
+            isinstance(value, bool)
+            or not isinstance(value, (int, float))
+            or not isfinite(float(value))
+            for value in values
+        ):
+            raise ValueError("diagnostic thresholds must be finite real numbers")
+        if (
+            self.max_prior_reference_gap_z < 0.0
+            or self.max_posterior_pull_fraction < 0.0
+            or not 0.0 <= self.max_boundary_cell_mass <= 1.0
+            or not 0.0 < self.minimum_retained_prior_mass <= 1.0
+        ):
+            raise ValueError("diagnostic thresholds are outside their allowed ranges")
 
 
 @dataclass(frozen=True)
@@ -377,16 +402,6 @@ def assess_posterior_bias_1d(
         if not isfinite(reference_se) or reference_se <= 0.0:
             raise ValueError("reference_standard_error must be positive and finite")
 
-    threshold_values = (
-        thresholds.max_prior_reference_gap_z,
-        thresholds.max_posterior_pull_fraction,
-        thresholds.max_boundary_cell_mass,
-    )
-    if any(
-        isinstance(value, bool) or not isfinite(value) or value < 0.0
-        for value in threshold_values
-    ):
-        raise ValueError("diagnostic thresholds must be finite and non-negative")
 
     prior_gap = prior_summary.conditional_mean - reference
     posterior_gap = posterior.mean - reference
@@ -418,10 +433,10 @@ def assess_posterior_bias_1d(
             "Prior mass is concentrated in the first or last numerical grid cell; "
             "inspect the finite parameter bounds and grid resolution."
         )
-    if prior_summary.retained_prior_mass < 0.99:
+    if prior_summary.retained_prior_mass < thresholds.minimum_retained_prior_mass:
         warnings.append(
-            "The finite parameter interval excludes more than one percent "
-            "of the original prior mass."
+            "The finite parameter interval retains less than the configured "
+            "minimum mass of the original prior."
         )
 
     return PosteriorBiasDiagnostic1D(

@@ -83,7 +83,7 @@ def test_bias_control_stress_grid_rejects_invalid_settings(kwargs):
 
 def test_cached_posterior_matches_reference_midpoint_engine():
     from gds_core.posterior import compute_posterior_1d
-    from gds_core.sinc_prior import contamination_robust_prior
+    from gds_core.sinc_prior import SincModulatedPrior, contamination_robust_prior
     from experiments.prior_bias_control_stress import (
         _build_prior_grid_cache,
         _compute_posterior_from_cache,

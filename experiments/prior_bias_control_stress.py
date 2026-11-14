@@ -367,6 +367,24 @@ def _fit_case(
     }
 
 
+def _paired_difference(
+    values: list[float],
+    baseline: list[float] | None,
+) -> tuple[float | None, float | None]:
+    """Return a paired mean difference and its Monte Carlo standard error."""
+    if baseline is None:
+        return None, None
+    if len(values) != len(baseline) or len(values) < 2:
+        raise ValueError("paired comparison vectors must have equal length >= 2")
+    differences = [value - reference for value, reference in zip(values, baseline)]
+    estimate = mean(differences)
+    mcse = sqrt(
+        fsum((value - estimate) ** 2 for value in differences)
+        / (len(differences) * (len(differences) - 1))
+    )
+    return estimate, mcse
+
+
 def _aggregate(
     records: list[dict[str, float]],
     *,
@@ -375,13 +393,58 @@ def _aggregate(
     sample_size: int,
     repetitions: int,
     theta_true: float,
+    nominal_records: list[dict[str, float]] | None,
 ) -> dict[str, Any]:
     errors = [record["posterior_error"] for record in records]
+    absolute_errors = [abs(value) for value in errors]
+    squared_errors = [record["squared_error"] for record in records]
+    posterior_coverage_values = [
+        record["posterior_covered"] for record in records
+    ]
+    robust_coverage_values = [
+        record["robust_wald_covered"] for record in records
+    ]
     bias = mean(errors)
-    posterior_coverage = mean(record["posterior_covered"] for record in records)
-    robust_coverage = mean(record["robust_wald_covered"] for record in records)
+    posterior_coverage = mean(posterior_coverage_values)
+    robust_coverage = mean(robust_coverage_values)
     mean_robust_variance = mean(record["robust_variance"] for record in records)
     mean_oracle_variance = mean(record["oracle_variance"] for record in records)
+
+    if nominal_records is None:
+        nominal_errors = None
+        nominal_absolute_errors = None
+        nominal_squared_errors = None
+        nominal_posterior_coverage = None
+        nominal_robust_coverage = None
+    else:
+        nominal_errors = [record["posterior_error"] for record in nominal_records]
+        nominal_absolute_errors = [abs(value) for value in nominal_errors]
+        nominal_squared_errors = [
+            record["squared_error"] for record in nominal_records
+        ]
+        nominal_posterior_coverage = [
+            record["posterior_covered"] for record in nominal_records
+        ]
+        nominal_robust_coverage = [
+            record["robust_wald_covered"] for record in nominal_records
+        ]
+
+    paired_bias_change, paired_bias_change_mcse = _paired_difference(
+        errors, nominal_errors
+    )
+    paired_mae_change, paired_mae_change_mcse = _paired_difference(
+        absolute_errors, nominal_absolute_errors
+    )
+    paired_mse_change, paired_mse_change_mcse = _paired_difference(
+        squared_errors, nominal_squared_errors
+    )
+    paired_posterior_coverage_change, paired_posterior_coverage_change_mcse = (
+        _paired_difference(posterior_coverage_values, nominal_posterior_coverage)
+    )
+    paired_robust_coverage_change, paired_robust_coverage_change_mcse = (
+        _paired_difference(robust_coverage_values, nominal_robust_coverage)
+    )
+
     return {
         "scenario": scenario,
         "prior_variant": prior_case.name,
@@ -398,7 +461,8 @@ def _aggregate(
             fsum((error - bias) ** 2 for error in errors)
             / (repetitions * (repetitions - 1))
         ),
-        "rmse": sqrt(mean(record["squared_error"] for record in records)),
+        "mean_absolute_error": mean(absolute_errors),
+        "rmse": sqrt(mean(squared_errors)),
         "posterior_credible_interval_coverage": posterior_coverage,
         "posterior_coverage_mcse": sqrt(
             posterior_coverage * (1.0 - posterior_coverage) / repetitions
@@ -440,6 +504,22 @@ def _aggregate(
         ),
         "minimum_prior_retained_mass": min(
             record["prior_retained_mass"] for record in records
+        ),
+        "paired_bias_change_vs_nominal": paired_bias_change,
+        "paired_bias_change_mcse_vs_nominal": paired_bias_change_mcse,
+        "paired_mae_change_vs_nominal": paired_mae_change,
+        "paired_mae_change_mcse_vs_nominal": paired_mae_change_mcse,
+        "paired_mse_change_vs_nominal": paired_mse_change,
+        "paired_mse_change_mcse_vs_nominal": paired_mse_change_mcse,
+        "paired_posterior_coverage_change_vs_nominal": paired_posterior_coverage_change,
+        "paired_posterior_coverage_change_mcse_vs_nominal": paired_posterior_coverage_change_mcse,
+        "paired_robust_coverage_change_vs_nominal": paired_robust_coverage_change,
+        "paired_robust_coverage_change_mcse_vs_nominal": paired_robust_coverage_change_mcse,
+        "fraction_replications_with_lower_absolute_error_vs_nominal": (
+            mean(
+                float(abs(record["posterior_error"]) < abs(reference["posterior_error"]))
+                for record, reference in zip(records, nominal_records)
+            ) if nominal_records is not None else None
         ),
     }
 
@@ -551,6 +631,15 @@ def run_stress_grid(
                         )
                     )
             for key, case in keys.items():
+                if case.name == "centred_diffuse_reference":
+                    nominal_records = None
+                else:
+                    nominal_case = next(
+                        candidate for candidate in keys.values()
+                        if candidate.name == "nominal"
+                        and candidate.location_offset == case.location_offset
+                    )
+                    nominal_records = buckets[_case_key(nominal_case)]
                 results.append(
                     _aggregate(
                         buckets[key],
@@ -559,6 +648,7 @@ def run_stress_grid(
                         sample_size=sample_size,
                         repetitions=repetitions,
                         theta_true=float(theta_true),
+                        nominal_records=nominal_records,
                     )
                 )
 

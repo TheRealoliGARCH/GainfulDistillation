@@ -30,6 +30,7 @@ This is a falsifiable research conjecture, not an established empirical result. 
 | `src/gds_core/graph.py` | Fixed six-agent structural topology |
 | `src/gds_core/transmission.py` | Directed adaptive transmission channels |
 | `src/gds_core/slde.py` | Online Student Learning Dynamics Estimator |
+| `src/gds_core/routing.py` | Probabilistic task routing and coalition shortlists |
 | `tests/` | Unit tests for graph, transmission, and SLDE |
 | `pyproject.toml` | Python package and test configuration |
 | `.github/workflows/python-tests.yml` | Automated Python test workflow |
@@ -58,6 +59,20 @@ The learning-rate coefficient is updated by scalar recursive least squares (RLS)
 
 Performance and auxiliary metric scores are currently expected to be normalised to [0, 1], and instructional dose must be strictly positive. These are implementation conventions, not claims that every real-world learning measure is naturally bounded or directly comparable. Empirical work must establish valid measurement instruments, score comparability, and the causal interpretation of instructional dose.
 
+## Task routing: current conventions
+
+The routing layer accepts a task request and a set of candidate student profiles. Each candidate supplies an estimated task-relevant gain, an uncertainty measure, optional Breadth and Depth fit scores, and an execution-cost estimate. An SLDE profile can be converted into a candidate: the RLS learning-rate estimate supplies expected gain, its reported standard error supplies an exploration signal, and observed Breadth/Depth means supply optional fit measures.
+
+For candidate i and task q, the implemented score is:
+
+`score_i = gain_i + w_B b_q B_i + w_D d_q D_i + w_U u_i - w_C c_i`
+
+where b_q and d_q are task requirements; B_i and D_i are candidate fit estimates; u_i is the uncertainty signal; c_i is estimated execution cost; and the w terms are non-negative configuration weights. When a fit measure is unobserved, the router uses an explicit configurable neutral prior rather than treating missing data as zero.
+
+Scores are converted to probabilities with a temperature-scaled softmax. A configurable exploration floor guarantees a minimum probability for every candidate, subject to `n × floor < 1`. The router returns the full probability distribution and a deterministic top-k shortlist for individual or coalition routing. A downstream scheduler may sample from the returned distribution; the current shortlist itself is not a stochastic assignment.
+
+These are routing heuristics, not validated optimal policies. The uncertainty bonus is an exploration proxy, not a formal value-of-information calculation. Expected gain, fit, uncertainty, and cost must be calibrated to comparable units before deployment. Coalition shortlisting does not yet model complementarity, coordination overhead, or joint performance.
+
 ## Development and testing
 
 Python 3.10 or later is required:
@@ -81,8 +96,8 @@ The Python workflow runs tests on pushes and pull requests that change source co
 
 ## Implementation status
 
-**Implemented:** GDS-Core structural graph, directed transmission-channel representation, and the first SLDE estimator with unit tests.
+**Implemented:** GDS-Core structural graph, directed transmission-channel representation, online SLDE, and probabilistic task routing with an exploration floor and top-k coalition shortlist; all have unit tests.
 
-**Next:** specialist task routing, resource optimisation, external validation, and reproducible evaluation.
+**Next:** resource optimisation, coalition complementarity and coordination costs, external validation, and reproducible end-to-end evaluation.
 
 The PDF treatise provides the theoretical specification and empirical research programme. Claims of performance superiority remain subject to implementation, replication, and independent validation.

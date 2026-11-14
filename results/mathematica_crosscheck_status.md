@@ -1,25 +1,24 @@
-# Mathematica cross-check status
+# Mathematica symbolic cross-check status
 
-A standalone Wolfram Language cross-check harness is provided at
-experiments/six_density_mathematica_crosscheck.wl.
+The Mathematica cross-check harness uses Wolfram Language `Integrate[]`
+throughout. It does not use `NIntegrate[]`.
 
-It independently evaluates all six printed normalising constants, integrates
-all six unnormalised kernels and normalised densities with NIntegrate,
-calculates the first, second and fourth central moments, computes peak
-heights, and compares the results against the archived SciPy/QUADPACK values.
-The Mahaloy absolute-sinc integral is split at its interior zeros.
+The script derives the six kernel integrals symbolically, checks them against
+the printed Fresnel/Gamma/error-function constants, derives the second and
+fourth moments symbolically, and then uses decimal evaluation only to compare
+the exact expressions with the previously computed SciPy/QUADPACK values.
+The Mahaloy absolute-sinc kernel is handled by splitting at its two interior
+zeros before invoking `Integrate[]`.
 
-**Execution status:** the current GDS automation environment does not contain
-a Mathematica / Wolfram Engine runtime. Therefore the Wolfram Language
-program has been prepared but has not been executed here. No Mathematica
-output is fabricated or represented as a completed cross-validation.
+**Execution status:** no Mathematica or Wolfram Engine runtime is available in
+the current environment. The script is committed but has not been executed
+here. Consequently, no Mathematica output is claimed. The symbolic cross-check
+becomes complete only after a Wolfram Engine / Mathematica execution produces
+and validates the JSON output.
 
-Run from the repository root in Mathematica or Wolfram Engine:
+Run from the repository root:
 
     wolframscript -file experiments/six_density_mathematica_crosscheck.wl
 
-On successful execution, the script writes
-results/six_density_mathematica_crosscheck.json. The JSON records the Wolfram
-version, precision settings, numerical results, and tolerance-based
-comparisons with SciPy. The cross-validation should be marked complete only
-after this output has been generated and inspected.
+The Cup strict upper bound is also derived analytically in the script:
+`Integral[-1,1] (1+x^2+x^4/2) dx = 43/15 > e`.

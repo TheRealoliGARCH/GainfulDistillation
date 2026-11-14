@@ -369,6 +369,19 @@ available in the current automation environment; see
 `results/mathematica_crosscheck_status.md`. The existence of the script is
 not evidence that a Mathematica run has completed.
 
+### Geometric coverage of all six-PDF mixtures
+
+The analysis in [six-density mixture coverage](results/six_density_mixture_coverage_analysis.md)
+computes the union of the graphs of all convex mixtures of the six PDFs,
+where mixture weights are nonnegative and sum to one. At each horizontal
+coordinate, the attainable vertical values run from the pointwise minimum
+density to the pointwise maximum density. The SciPy calculation finds the
+envelope crossings and integrates the band; the numerical result is
+**73.2566%** of `[-1,1] x [0,1]`. Code, tests and the machine-readable result
+are in `experiments/mixture_coverage.py`,
+`tests/test_mixture_coverage.py`, and
+`results/six_density_mixture_coverage.json`.
+
 ## Development and testing
 
 Python 3.10 or later is required:

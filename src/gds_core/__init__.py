@@ -1,6 +1,10 @@
 """Core graph, learning, routing, allocation, and validation primitives."""
 
-from .balanced_loss import BalancedLossVariance1D, balanced_loss_variance_1d
+from .balanced_loss import (
+    BalancedLossVariance1D,
+    ScalarScoreSummary,
+    balanced_loss_variance_1d,
+)
 
 from .graph import (
     ADJACENCY_MATRIX,
@@ -60,6 +64,7 @@ __all__ = [
     "RoutingWeights",
     "SLDEEstimate",
     "SandwichCovariance",
+    "ScalarScoreSummary",
     "SincModulatedPrior",
     "StudentLearningDynamicsEstimator",
     "TaskCandidate",

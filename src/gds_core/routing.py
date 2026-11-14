@@ -67,11 +67,19 @@ class TaskCandidate:
     breadth_fit: Optional[float] = None
     depth_fit: Optional[float] = None
     execution_cost: float = 0.0
+    domain: Optional[str] = None
+    method: Optional[str] = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.student_id, str) or not self.student_id.strip():
             raise ValueError("student_id must be a non-empty string")
         object.__setattr__(self, "student_id", self.student_id.strip())
+        for name in ("domain", "method"):
+            value = getattr(self, name)
+            if value is not None:
+                if not isinstance(value, str) or not value.strip():
+                    raise ValueError(f"{name} must be None or a non-empty string")
+                object.__setattr__(self, name, value.strip())
         object.__setattr__(self, "expected_gain", _finite(self.expected_gain, "expected_gain"))
         uncertainty = _finite(self.uncertainty, "uncertainty")
         cost = _finite(self.execution_cost, "execution_cost")
@@ -137,6 +145,8 @@ def candidate_from_slde(
         breadth_fit=None if estimate.breadth is None else estimate.breadth.mean,
         depth_fit=None if estimate.depth is None else estimate.depth.mean,
         execution_cost=execution_cost,
+        domain=estimate.domain,
+        method=estimate.method,
     )
 
 
@@ -175,6 +185,11 @@ def route_task(
 
     scored: list[tuple[str, float]] = []
     for candidate in candidates:
+        if candidate.domain is not None and candidate.domain != task.domain:
+            raise ValueError(
+                f"candidate {candidate.student_id} has domain {candidate.domain!r}, "
+                f"but task domain is {task.domain!r}"
+            )
         breadth_fit = (
             weights.neutral_fit if candidate.breadth_fit is None else candidate.breadth_fit
         )

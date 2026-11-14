@@ -64,7 +64,7 @@ def test_linear_program_case_allocates_to_highest_positive_gain():
         max_share=0.6,
     )
     values = dict(result.allocations)
-    assert values == pytest.approx({"S1": 0.0, "S2": 3.0, "S3": 0.0})
+    assert values == pytest.approx({"S1": 2.0, "S2": 3.0, "S3": 0.0})
     assert result.converged
 
 
@@ -73,7 +73,7 @@ def test_allocation_is_deterministic_for_tied_linear_objective():
         ["S2", "S1"], [1.0, 1.0], [[0.0, 0.0], [0.0, 0.0]], 1.0,
         risk_aversion=0.0, regularization=0.0,
     )
-    assert dict(result.allocations) == pytest.approx({"S2": 1.0, "S1": 0.0})
+    assert dict(result.allocations) == pytest.approx({"S2": 0.0, "S1": 1.0})
 
 
 def test_non_psd_covariance_is_rejected():

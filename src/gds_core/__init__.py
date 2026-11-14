@@ -38,6 +38,8 @@ from .sandwich import SandwichCovariance, sandwich_covariance
 from .sinc_kernel import normalized_sinc, sinc_covariance, sinc_covariance_matrix
 from .sinc_prior import (
     IndependentSincPrior,
+    SincPriorMixture,
+    contamination_robust_prior,
     SincModulatedPrior,
     sinc4_spectral_overlap,
 )
@@ -69,6 +71,7 @@ __all__ = [
     "STUDENT_INDICES",
     "Finding",
     "IndependentSincPrior",
+    "SincPriorMixture",
     "LearningObservation",
     "MetricEstimate",
     "ResourceAllocationResult",
@@ -93,6 +96,7 @@ __all__ = [
     "build_adjacency_matrix",
     "candidate_from_slde",
     "compute_posterior_1d",
+    "contamination_robust_prior",
     "normalized_sinc",
     "prior_predictive_check_1d",
     "route_task",

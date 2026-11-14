@@ -346,6 +346,28 @@ The SciPy-based audit of the six functions in *Six Probability Density Functions
 
 All six normalised integrals are 1 to numerical tolerance, and all six peak values are strictly below 1. The Cup peak is approximately 0.929230705827751, strengthening the paper's stated weak bound. The Mahaloy sinc convention is not defined in the paper; the audit uses `sin(u)/u`, which matches its printed normaliser and graph. The Cup strict bound also has an elementary analytic lower-bound argument. For the other five strict peak comparisons, this is a high-accuracy numerical audit rather than a formal interval-arithmetic proof.
 
+
+
+### Independent Mathematica cross-check harness
+
+A standalone Wolfram Language script is provided at
+`experiments/six_density_mathematica_crosscheck.wl`. It uses high-precision
+`NIntegrate` and Mathematica's built-in Fresnel, Gamma, error, and imaginary
+error functions to independently reproduce the normalisers, moments, and peak
+heights, then compare its output with the SciPy reference values.
+
+Run it from the repository root with:
+
+```bash
+wolframscript -file experiments/six_density_mathematica_crosscheck.wl
+```
+
+The script exports `results/six_density_mathematica_crosscheck.json`.
+Execution is pending because a Mathematica / Wolfram Engine runtime is not
+available in the current automation environment; see
+`results/mathematica_crosscheck_status.md`. The existence of the script is
+not evidence that a Mathematica run has completed.
+
 ## Development and testing
 
 Python 3.10 or later is required:

@@ -92,6 +92,8 @@ def test_candidate_can_be_constructed_from_slde_profile():
     assert candidate.breadth_fit == pytest.approx(0.7)
     assert candidate.depth_fit == pytest.approx(0.7)
     assert candidate.execution_cost == pytest.approx(0.3)
+    assert candidate.domain == "algebra"
+    assert candidate.method == "retrieval"
 
 
 def test_softmax_is_numerically_stable_for_large_scores():
@@ -145,3 +147,10 @@ def test_candidate_metrics_and_cost_are_validated():
 def test_task_requirements_are_validated():
     with pytest.raises(ValueError):
         TaskRequest("q", "domain", breadth_requirement=1.1)
+
+
+def test_candidate_with_mismatched_domain_is_rejected():
+    task = TaskRequest("q", "algebra")
+    candidate = TaskCandidate("S1", 0.2, domain="physics")
+    with pytest.raises(ValueError, match="task domain"):
+        route_task(task, [candidate])

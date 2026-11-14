@@ -439,8 +439,8 @@ def run_stress_grid(
         raise ValueError("sample_sizes must contain integers of at least two")
     if repetitions < 2:
         raise ValueError("repetitions must be at least two")
-    if points < 16:
-        raise ValueError("points must be at least 16")
+    if points < 64:
+        raise ValueError("points must be at least 64")
     if not scenarios or not priors:
         raise ValueError("at least one scenario and prior are required")
     if bounds[0] >= bounds[1]:

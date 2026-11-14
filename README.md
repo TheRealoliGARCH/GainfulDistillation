@@ -351,10 +351,11 @@ All six normalised integrals are 1 to numerical tolerance, and all six peak valu
 ### Independent Mathematica cross-check harness
 
 A standalone Wolfram Language script is provided at
-`experiments/six_density_mathematica_crosscheck.wl`. It uses high-precision
-`NIntegrate` and Mathematica's built-in Fresnel, Gamma, error, and imaginary
-error functions to independently reproduce the normalisers, moments, and peak
-heights, then compare its output with the SciPy reference values.
+`experiments/six_density_mathematica_crosscheck.wl`. It uses symbolic
+`Integrate[]` to derive the six kernel integrals and the second and fourth
+moments, checks the exact expressions against the printed
+Fresnel/Gamma/error-function normalisers, and compares decimal evaluations
+with the SciPy reference values. It does not use `NIntegrate[]`.
 
 Run it from the repository root with:
 

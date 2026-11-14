@@ -26,7 +26,7 @@ from math import fsum, sqrt
 from statistics import mean
 from typing import Any
 
-from gds_core.balanced_loss import balanced_loss_variance_1d
+from gds_core.balanced_loss import ScalarScoreSummary, balanced_loss_variance_1d
 from gds_core.posterior import compute_posterior_1d
 from gds_core.sinc_prior import SincModulatedPrior
 
@@ -168,11 +168,15 @@ def _fit_one_prior(
         credible_level=0.95,
     )
 
-    def score_information(theta: float) -> tuple[tuple[float, ...], float]:
+    def score_information(theta: float) -> tuple[ScalarScoreSummary, float]:
         # Working likelihood is independent Normal(theta, 1):
         # score_i(theta) = y_i - theta and I_n(theta) = 1.
-        scores = tuple(value - theta for value in observations)
-        return scores, 1.0
+        # Use the exact sufficient-statistic decomposition of the mean
+        # squared score instead of materialising n scores at every grid point.
+        mean_squared_score = (
+            centred_sum_squares / n + (sample_mean - theta) ** 2
+        )
+        return ScalarScoreSummary(n, mean_squared_score), 1.0
 
     robust = balanced_loss_variance_1d(posterior, score_information)
 

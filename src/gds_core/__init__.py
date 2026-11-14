@@ -1,4 +1,4 @@
-"""Core graph, transmission, and learning-estimation primitives."""
+"""Core graph, transmission, learning-estimation, and routing primitives."""
 
 from .graph import (
     ADJACENCY_MATRIX,
@@ -8,6 +8,14 @@ from .graph import (
     student_edge_multiplicity,
     validate_topology,
     weighted_degree,
+)
+from .routing import (
+    RoutingDecision,
+    RoutingWeights,
+    TaskCandidate,
+    TaskRequest,
+    candidate_from_slde,
+    route_task,
 )
 from .slde import (
     LearningObservation,
@@ -23,22 +31,17 @@ __all__ = [
     "STUDENT_INDICES",
     "LearningObservation",
     "MetricEstimate",
+    "RoutingDecision",
+    "RoutingWeights",
     "SLDEEstimate",
     "StudentLearningDynamicsEstimator",
+    "TaskCandidate",
+    "TaskRequest",
     "TransmissionWeights",
-    "LearningObservation",
-    "MetricEstimate",
-    "SLDEEstimate",
-    "StudentLearningDynamicsEstimator",
     "build_adjacency_matrix",
+    "candidate_from_slde",
+    "route_task",
     "student_edge_multiplicity",
     "validate_topology",
     "weighted_degree",
 ]
-
-from .slde import (
-    LearningObservation,
-    MetricEstimate,
-    SLDEEstimate,
-    StudentLearningDynamicsEstimator,
-)

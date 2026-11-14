@@ -14,7 +14,7 @@ from dataclasses import dataclass
 from math import exp, fsum, isfinite, log
 from typing import Callable
 
-from .sinc_prior import SincModulatedPrior
+from .sinc_prior import SincModulatedPrior, SincPriorMixture
 
 
 @dataclass(frozen=True)
@@ -101,8 +101,8 @@ def compute_posterior_1d(
     The log marginal likelihood is approximated under the prior conditioned
     on bounds. points is the number of equal-width midpoint cells.
     """
-    if not isinstance(prior, SincModulatedPrior):
-        raise TypeError("prior must be a SincModulatedPrior")
+    if not isinstance(prior, (SincModulatedPrior, SincPriorMixture)):
+        raise TypeError("prior must be a SincModulatedPrior or SincPriorMixture")
     if not callable(log_likelihood):
         raise TypeError("log_likelihood must be callable")
     if (

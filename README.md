@@ -340,6 +340,12 @@ Monte Carlo standard errors for the posterior and robust coverage estimates, res
 
 In this run, the ordinary posterior interval materially under-covered when the working likelihood variance was wrong, while the balanced-loss robust Wald interval was close to nominal coverage and the average robust variance was within roughly 5.5% of the frequentist sandwich variance. These are results for this particular simulation design and seed, not a general performance guarantee. More repetitions, alternative data-generating processes, prior-sensitivity analysis, and independent replication remain necessary.
 
+## Six-density verification: first research milestone
+
+The SciPy-based audit of the six functions in *Six Probability Density Functions* is implemented in `experiments/six_density_verification.py`; regression tests are in `tests/test_six_density_verification.py`. QUADPACK independently integrates each unnormalised kernel and the corresponding normalised density. The results are archived in `results/six_density_verification.json`, with conventions, numerical values, and limitations documented in [the verification report](results/six_density_verification_analysis.md).
+
+All six normalised integrals are 1 to numerical tolerance, and all six peak values are strictly below 1. The Cup peak is approximately 0.929230705827751, strengthening the paper's stated weak bound. The Mahaloy sinc convention is not defined in the paper; the audit uses `sin(u)/u`, which matches its printed normaliser and graph. The Cup strict bound also has an elementary analytic lower-bound argument. For the other five strict peak comparisons, this is a high-accuracy numerical audit rather than a formal interval-arithmetic proof.
+
 ## Development and testing
 
 Python 3.10 or later is required:

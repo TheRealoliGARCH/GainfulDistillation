@@ -1,5 +1,7 @@
 """Core graph, learning, routing, allocation, and validation primitives."""
 
+from .balanced_loss import BalancedLossVariance1D, balanced_loss_variance_1d
+
 from .graph import (
     ADJACENCY_MATRIX,
     NODE_LABELS,
@@ -44,6 +46,7 @@ from .verification import (
 
 __all__ = [
     "ADJACENCY_MATRIX",
+    "BalancedLossVariance1D",
     "NODE_LABELS",
     "Posterior1D",
     "STUDENT_INDICES",
@@ -67,6 +70,7 @@ __all__ = [
     "VerificationStatus",
     "adjudicate",
     "allocate_resources",
+    "balanced_loss_variance_1d",
     "build_adjacency_matrix",
     "candidate_from_slde",
     "compute_posterior_1d",

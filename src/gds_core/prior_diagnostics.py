@@ -259,7 +259,7 @@ def prior_predictive_check_1d(
     ordered = tuple(sorted(predictive))
     pred_mean = fsum(predictive) / draws
     pred_variance = fsum((x - pred_mean) ** 2 for x in predictive) / draws
-    tail = (1.0 - credible_level) / 2.0
+    tail = (1.0 - summary.credible_level) / 2.0
     pred_interval = (
         _sample_quantile(ordered, tail),
         _sample_quantile(ordered, 1.0 - tail),

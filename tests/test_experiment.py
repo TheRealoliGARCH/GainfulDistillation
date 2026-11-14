@@ -1,3 +1,5 @@
+import math
+
 import pytest
 
 from experiments.normal_mean_misspecification import run_experiment
@@ -20,7 +22,7 @@ def test_expanded_experiment_is_reproducible_and_prior_paired():
     assert len(first["results"]) == 4
 
     for result in first["results"]:
-        assert result["bias"] == pytest.approx(result["bias"])
+        assert math.isfinite(result["bias"])
         assert result["rmse"] >= 0.0
         assert result["mean_posterior_sd"] > 0.0
         assert result["mean_balanced_loss_robust_se"] > 0.0

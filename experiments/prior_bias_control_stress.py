@@ -17,12 +17,12 @@ import argparse
 import json
 import random
 from dataclasses import dataclass
-from math import fsum, isfinite, sqrt
+from math import exp, fsum, isfinite, log, sqrt
 from statistics import mean
 from typing import Any
 
 from gds_core.balanced_loss import ScalarScoreSummary, balanced_loss_variance_1d
-from gds_core.posterior import compute_posterior_1d
+from gds_core.posterior import Posterior1D
 from gds_core.prior_diagnostics import (
     PriorBiasThresholds,
     assess_posterior_bias_1d,
@@ -37,6 +37,135 @@ from gds_core.sinc_prior import (
 Z_975 = 1.959963984540054
 LOG_2PI = 1.8378770664093453
 PARAMETER_BOUNDS = (-16.0, 16.0)
+
+
+
+@dataclass(frozen=True)
+class PriorGridCache:
+    bounds: tuple[float, float]
+    grid: tuple[float, ...]
+    log_prior_values: tuple[float, ...]
+    log_prior_mass: float
+    points: int
+    cell_width: float
+
+
+def _logsumexp(values: tuple[float, ...]) -> float:
+    finite_values = tuple(value for value in values if value != float("-inf"))
+    if not finite_values:
+        return float("-inf")
+    maximum = max(finite_values)
+    return maximum + log(fsum(exp(value - maximum) for value in finite_values))
+
+
+def _quantile_from_masses(
+    masses: tuple[float, ...],
+    *,
+    lower: float,
+    cell_width: float,
+    probability: float,
+) -> float:
+    if probability <= 0.0:
+        return lower
+    if probability >= 1.0:
+        return lower + len(masses) * cell_width
+    cumulative = 0.0
+    for index, mass in enumerate(masses):
+        next_cumulative = cumulative + mass
+        if probability <= next_cumulative or index == len(masses) - 1:
+            fraction = 0.0 if mass <= 0.0 else (
+                (probability - cumulative) / mass
+            )
+            fraction = min(1.0, max(0.0, fraction))
+            return lower + (index + fraction) * cell_width
+        cumulative = next_cumulative
+    return lower + len(masses) * cell_width
+
+
+def _build_prior_grid_cache(
+    prior: SincModulatedPrior | SincPriorMixture,
+    *,
+    bounds: tuple[float, float],
+    points: int,
+) -> PriorGridCache:
+    lower, upper = bounds
+    cell_width = (upper - lower) / points
+    grid = tuple(lower + (index + 0.5) * cell_width for index in range(points))
+    log_prior_values = tuple(prior.log_density(value) for value in grid)
+    log_prior_mass = _logsumexp(tuple(
+        value + log(cell_width) if value != float("-inf") else value
+        for value in log_prior_values
+    ))
+    if log_prior_mass == float("-inf"):
+        raise ValueError("prior has zero numerical mass inside parameter bounds")
+    return PriorGridCache(
+        bounds=bounds,
+        grid=grid,
+        log_prior_values=log_prior_values,
+        log_prior_mass=log_prior_mass,
+        points=points,
+        cell_width=cell_width,
+    )
+
+
+def _compute_posterior_from_cache(
+    cache: PriorGridCache,
+    log_likelihood,
+) -> Posterior1D:
+    """Build a posterior while reusing the prior's fixed quadrature grid."""
+    log_joint = []
+    log_width = log(cache.cell_width)
+    for theta, log_prior in zip(cache.grid, cache.log_prior_values):
+        if log_prior == float("-inf"):
+            log_joint.append(float("-inf"))
+            continue
+        likelihood_value = float(log_likelihood(theta))
+        if likelihood_value != float("-inf") and not isfinite(likelihood_value):
+            raise ValueError("log_likelihood must return finite values or -inf")
+        log_joint.append(log_prior + likelihood_value + log_width)
+
+    log_joint_mass = _logsumexp(tuple(log_joint))
+    if log_joint_mass == float("-inf"):
+        raise ValueError("likelihood has zero numerical support under the prior")
+    masses = tuple(
+        0.0 if value == float("-inf") else exp(value - log_joint_mass)
+        for value in log_joint
+    )
+    total = fsum(masses)
+    masses = tuple(value / total for value in masses)
+    density = tuple(value / cache.cell_width for value in masses)
+    posterior_mean = fsum(
+        mass * theta for mass, theta in zip(masses, cache.grid)
+    )
+    variance = max(0.0, fsum(
+        mass * (theta - posterior_mean) ** 2
+        for mass, theta in zip(masses, cache.grid)
+    ))
+    tail = (1.0 - 0.95) / 2.0
+    interval = (
+        _quantile_from_masses(
+            masses, lower=cache.bounds[0],
+            cell_width=cache.cell_width, probability=tail,
+        ),
+        _quantile_from_masses(
+            masses, lower=cache.bounds[0],
+            cell_width=cache.cell_width, probability=1.0 - tail,
+        ),
+    )
+    return Posterior1D(
+        bounds=cache.bounds,
+        grid=cache.grid,
+        density=density,
+        probability_masses=masses,
+        mean=posterior_mean,
+        variance=variance,
+        standard_deviation=sqrt(variance),
+        credible_level=0.95,
+        credible_interval=interval,
+        log_marginal_likelihood=log_joint_mass - cache.log_prior_mass,
+        points=cache.points,
+        cell_width=cache.cell_width,
+    )
 
 
 @dataclass(frozen=True)
@@ -172,7 +301,7 @@ def _fit_case(
     theta_true: float,
     prior_case: PriorCase,
     prior_summary: Any,
-    points: int,
+    prior_cache: PriorGridCache,
 ) -> dict[str, float]:
     n = len(observations)
     sample_mean = fsum(observations) / n
@@ -184,13 +313,7 @@ def _fit_case(
         squared_error = centred_sum_squares + n * (sample_mean - theta) ** 2
         return -0.5 * (n * LOG_2PI + squared_error)
 
-    posterior = compute_posterior_1d(
-        prior_case.prior,
-        log_likelihood,
-        bounds=PARAMETER_BOUNDS,
-        points=points,
-        credible_level=0.95,
-    )
+    posterior = _compute_posterior_from_cache(prior_cache, log_likelihood)
 
     def score_information(theta: float) -> tuple[ScalarScoreSummary, float]:
         mean_squared_score = (
@@ -385,6 +508,12 @@ def run_stress_grid(
         scale_multipliers=tuple(float(value) for value in scale_multipliers),
     )
     keys = {_case_key(case): case for case in cases}
+    prior_caches = {
+        key: _build_prior_grid_cache(
+            case.prior, bounds=PARAMETER_BOUNDS, points=points,
+        )
+        for key, case in keys.items()
+    }
     summaries = {
         key: summarize_prior_1d(
             case.prior,
@@ -418,7 +547,7 @@ def run_stress_grid(
                             theta_true=float(theta_true),
                             prior_case=case,
                             prior_summary=summaries[key],
-                            points=points,
+                            prior_cache=prior_caches[key],
                         )
                     )
             for key, case in keys.items():

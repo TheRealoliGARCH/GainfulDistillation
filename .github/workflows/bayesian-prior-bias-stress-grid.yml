@@ -35,7 +35,7 @@ jobs:
           python experiments/prior_bias_control_stress.py \
             --sample-sizes 40 80 160 \
             --repetitions 100 \
-            --points 1024 \
+            --points 2048 \
             --seed 2026111402 \
             --output prior_bias_control_stress_results.json
       - name: Upload stress-grid results

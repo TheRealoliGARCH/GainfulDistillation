@@ -16,6 +16,14 @@ def test_six_agent_topology_and_node_order():
     assert NODE_LABELS == ("T", "S1", "S2", "S3", "S4", "S5")
     assert len(ADJACENCY_MATRIX) == 6
     assert all(len(row) == 6 for row in ADJACENCY_MATRIX)
+    assert ADJACENCY_MATRIX == (
+        (0, 1, 1, 1, 1, 1),
+        (1, 0, 2, 1, 1, 2),
+        (1, 2, 0, 2, 1, 1),
+        (1, 1, 2, 0, 2, 1),
+        (1, 1, 1, 2, 0, 2),
+        (1, 2, 1, 1, 2, 0),
+    )
     validate_topology()
 
 

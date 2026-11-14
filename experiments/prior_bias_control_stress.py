@@ -36,7 +36,7 @@ from gds_core.sinc_prior import (
 
 Z_975 = 1.959963984540054
 LOG_2PI = 1.8378770664093453
-PARAMETER_BOUNDS = (-8.0, 8.0)
+PARAMETER_BOUNDS = (-16.0, 16.0)
 
 
 @dataclass(frozen=True)
@@ -224,6 +224,7 @@ def _fit_case(
         "robust_wald_covered": float(
             robust_lower <= theta_true <= robust_upper
         ),
+        "prior_retained_mass": prior_summary.retained_prior_mass,
         "posterior_pull": (
             diagnostic.posterior_pull_fraction
             if diagnostic.posterior_pull_fraction is not None else 0.0
@@ -310,6 +311,12 @@ def _aggregate(
         ),
         "mean_diagnostic_warning_count": mean(
             record["warning_count"] for record in records
+        ),
+        "mean_prior_retained_mass": mean(
+            record["prior_retained_mass"] for record in records
+        ),
+        "minimum_prior_retained_mass": min(
+            record["prior_retained_mass"] for record in records
         ),
     }
 

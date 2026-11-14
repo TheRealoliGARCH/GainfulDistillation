@@ -40,12 +40,12 @@ This is a falsifiable research conjecture, not an established empirical result. 
 | `src/gds_core/routing.py` | Probabilistic task routing and coalition shortlists |
 | `src/gds_core/resource_allocation.py` | Constrained quadratic resource allocation |
 | `src/gds_core/sinc_kernel.py` | Band-limited Sinc covariance kernel for Gaussian-process models |
-| `src/gds_core/sinc_prior.py` | Proper non-negative Sinc-modulated univariate and independent-product priors |
+| `src/gds_core/sinc_prior.py` | Proper Sinc-modulated priors, explicit diffuse-contamination mixtures, and independent-product priors |
 | `src/gds_core/posterior.py` | One-dimensional posterior estimation with log-likelihoods, quadrature and posterior summaries |
 | `src/gds_core/prior_diagnostics.py` | Prior-predictive checks, finite-bound prior summaries, and posterior-shrinkage diagnostics |
 | `src/gds_core/balanced_loss.py` | Scalar Bayesian balanced-loss variance correction using posterior score-information averaging |
 | `experiments/expanded_stress_grid.py` | Multi-distribution, multi-sample-size and multi-prior Monte Carlo stress grid |
-| `experiments/normal_mean_misspecification.py` | Reproducible Monte Carlo study under correct and misspecified Normal likelihood variance |
+| `experiments/normal_mean_misspecification.py` | Reproducible Monte Carlo study under correct and misspecified Normal likelihood variance |\n| `experiments/prior_bias_control.py` | Paired Monte Carlo study of diffuse-contamination prior robustification and finite-sample bias |
 | `src/gds_core/sandwich.py` | General estimating-equation sandwich covariance calculation |
 | `src/gds_core/verification.py` | Provenance-aware independent claim adjudication |
 | `tests/` | Unit tests for graph, transmission, and SLDE |
@@ -175,6 +175,47 @@ Diagnostic thresholds are configurable through `PriorBiasThresholds`. Prior conc
 
 The 144-cell experiment in `expanded_stress_grid.py` now also reports prior-reference conflict warning rates, posterior-pull warning rates, prior-concentration warning rates, prior-to-reference standard-deviation ratios, retained prior mass, prior interval width, and standardized reference gaps for each data-generating process, sample size, and prior configuration. These fields allow prior sensitivity and mean displacement to be examined alongside variance calibration.
 
+
+### Explicit prior-concentration robustification
+
+The helper `contamination_robust_prior` constructs a proper mixture
+`(1 - epsilon) * pi_nominal + epsilon * pi_diffuse`. The diffuse component is
+a wider, unmodulated Sinc prior sharing the nominal prior's centre and
+bandwidth. Mixture weights are normalised and the component priors remain
+visible in the returned `SincPriorMixture` object.
+
+This is a sensitivity and concentration-control device, not an automatic
+bias correction. Because both components share the same centre, it does not
+repair a badly located prior. It can instead reduce the influence of an
+overly concentrated prior and makes the cost of that choice measurable.
+The signed posterior-pull diagnostic now warns on large absolute pull
+fractions, including overshoot past the likelihood-only reference.
+
+The paired experiment `experiments/prior_bias_control.py` evaluates a
+shifted nominal prior, three diffuse-contamination weights, and a centred
+diffuse benchmark on identical simulated datasets. It reports frequentist
+bias and its Monte Carlo standard error, RMSE, posterior and robust-Wald
+coverage, prior-conflict warning rates, posterior-pull diagnostics, and
+robust variance. This simulation deliberately uses a correctly specified
+Normal likelihood so that prior effects are isolated. A lower bias in this
+design is not evidence that mixture robustification is universally optimal;
+the contamination weight and diffuse scale must be selected prospectively,
+and the prior location still requires substantive justification.
+
+Run the experiment with:
+
+```bash
+python experiments/prior_bias_control.py \
+  --sample-sizes 40 80 160 \
+  --repetitions 200 \
+  --points 1024 \
+  --seed 20261114 \
+  --output prior_bias_control_results.json
+```
+
+The GitHub Actions workflow `.github/workflows/bayesian-prior-bias-control.yml`
+runs this paired design and stores the JSON output as a build artifact.
+
 ### Monte Carlo experiment
 
 The experiment `experiments/normal_mean_misspecification.py` is a supplemental high-variance study. It compares ordinary posterior uncertainty with the scalar balanced-loss robust standard error under four data-generating processes: correctly specified Normal errors with SD 1; Normal variance misspecification with SD 2; Student-t(5) errors rescaled to variance 4; and independent heteroskedastic Normal errors with average variance 4. It crosses sample sizes 40, 80 and 160 with four Sinc-prior configurations. Identical simulated datasets are used for all priors within each scenario/sample-size cell (common random numbers).
@@ -276,8 +317,8 @@ The Python workflow runs tests on pushes and pull requests that change source co
 
 ## Implementation status
 
-**Implemented:** GDS-Core structural graph, directed transmission-channel representation, online SLDE, probabilistic task routing, constrained quadratic resource allocation, Sinc covariance kernel, proper Sinc-modulated prior, one-dimensional Bayesian posterior reference engine, scalar Bayesian balanced-loss variance correction, prior-predictive and posterior-shrinkage diagnostics, frequentist sandwich covariance calculation, independent verification adjudication, and reproducible Normal-mean and expanded robustness Monte Carlo experiments; core components and experiment entry points have automated tests.
+**Implemented:** GDS-Core structural graph, directed transmission-channel representation, online SLDE, probabilistic task routing, constrained quadratic resource allocation, Sinc covariance kernel, proper Sinc-modulated prior and explicit diffuse-contamination Sinc-prior mixture, one-dimensional Bayesian posterior reference engine, scalar Bayesian balanced-loss variance correction, prior-predictive and posterior-shrinkage diagnostics, paired prior-concentration bias-control experiment, frequentist sandwich covariance calculation, independent verification adjudication, and reproducible Normal-mean and expanded robustness Monte Carlo experiments; core components and experiment entry points have automated tests.
 
-**Next:** extend posterior computation and balanced-loss correction to multivariate parameters; develop posterior-predictive checks for additional statistics; evaluate explicit bias-mitigation strategies without hiding prior-data conflict; replicate the NHANES application; and evaluate GDS end-to-end under matched compute and data budgets.
+**Next:** extend posterior computation and balanced-loss correction to multivariate parameters; develop posterior-predictive checks for additional statistics; test prospectively specified contamination weights, alternative diffuse components, and prior-location sensitivity without hiding prior-data conflict; replicate the NHANES application; and evaluate GDS end-to-end under matched compute and data budgets.
 
 The PDF treatise provides the theoretical specification and empirical research programme. Claims of performance superiority remain subject to implementation, replication, and independent validation.

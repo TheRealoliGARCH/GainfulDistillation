@@ -195,6 +195,7 @@ python experiments/expanded_stress_grid.py \
 ```
 
 The `.github/workflows/bayesian-stress-grid.yml` workflow runs the standard design and stores the JSON output as a GitHub Actions artifact.
+The completed seed-20261115 run is also archived in `results/expanded_stress_grid_seed_20261115.json`; the interpretation and principal findings are recorded in `results/expanded_stress_grid_analysis.md`.
 
 The first recorded run used seed 20261114, sample size 80, 200 replications per scenario, and 1,024 quadrature points. Results are archived at `results/normal_mean_misspecification_seed_20261114.json`.
 

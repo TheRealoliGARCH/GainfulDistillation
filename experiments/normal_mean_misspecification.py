@@ -150,6 +150,8 @@ def _fit_one_prior(
     n = len(observations)
     sum_y = fsum(observations)
     sum_y_squared = fsum(value * value for value in observations)
+    sample_mean = sum_y / n
+    centred_sum_squares = max(0.0, sum_y_squared - sum_y * sum_y / n)
     normal_log_constant = n * 1.8378770664093453
 
     def log_likelihood(theta: float) -> float:

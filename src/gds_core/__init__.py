@@ -20,6 +20,11 @@ from .routing import (
 )
 from .sandwich import SandwichCovariance, sandwich_covariance
 from .sinc_kernel import normalized_sinc, sinc_covariance, sinc_covariance_matrix
+from .sinc_prior import (
+    IndependentSincPrior,
+    SincModulatedPrior,
+    sinc4_spectral_overlap,
+)
 from .slde import (
     LearningObservation,
     MetricEstimate,
@@ -41,6 +46,7 @@ __all__ = [
     "NODE_LABELS",
     "STUDENT_INDICES",
     "Finding",
+    "IndependentSincPrior",
     "LearningObservation",
     "MetricEstimate",
     "ResourceAllocationResult",
@@ -49,6 +55,7 @@ __all__ = [
     "RoutingWeights",
     "SLDEEstimate",
     "SandwichCovariance",
+    "SincModulatedPrior",
     "StudentLearningDynamicsEstimator",
     "TaskCandidate",
     "TaskRequest",
@@ -65,6 +72,7 @@ __all__ = [
     "sandwich_covariance",
     "sinc_covariance",
     "sinc_covariance_matrix",
+    "sinc4_spectral_overlap",
     "student_edge_multiplicity",
     "validate_topology",
     "weighted_degree",

@@ -18,6 +18,7 @@ The initial architecture contains one teacher and five students. The students fo
 - **Independent adjudication:** retain claim provenance and require distinct independent review groups before verification.
 - **Robust covariance diagnostics:** compute estimating-equation sandwich covariance when sensitivity and variability matrices are supplied.
 - **Band-limited modelling:** provide a Sinc covariance kernel for Gaussian-process models.
+- **Proper Sinc-based priors:** provide a non-negative, analytically normalised, Sinc-modulated prior with finite second moment.
 
 ## Principal research conjecture
 
@@ -36,6 +37,7 @@ This is a falsifiable research conjecture, not an established empirical result. 
 | `src/gds_core/routing.py` | Probabilistic task routing and coalition shortlists |
 | `src/gds_core/resource_allocation.py` | Constrained quadratic resource allocation |
 | `src/gds_core/sinc_kernel.py` | Band-limited Sinc covariance kernel for Gaussian-process models |
+| `src/gds_core/sinc_prior.py` | Proper non-negative Sinc-modulated univariate and independent-product priors |
 | `src/gds_core/sandwich.py` | General estimating-equation sandwich covariance calculation |
 | `src/gds_core/verification.py` | Provenance-aware independent claim adjudication |
 | `tests/` | Unit tests for graph, transmission, and SLDE |
@@ -99,19 +101,45 @@ Two repository manuscripts motivate this layer:
 - *A Novel Approach to Bayesian Estimation using the Sandwich Theorem and the Sinc Function*.
 - *A Second Novel Approach to Bayesian Estimation using the Sandwich Theorem and the Sinc Function*.
 
-The implementation separates three mathematically distinct ideas:
+The implementation separates four mathematically distinct ideas:
 
 1. **Sandwich covariance:** `sandwich.py` computes the general estimating-equation covariance `A^{-1} B A^{-T}`, with an optional division by sample size. It requires model-specific sensitivity and variability inputs. This is not a complete implementation of the Bayesian balanced-loss estimator discussed by Li and Rice.
-2. **Sinc spectral modelling:** `sinc_kernel.py` implements the stationary band-limited Sinc covariance kernel. The Sinc function is treated as a covariance kernel, not as a probability density. The Sinc-times-cosine expression has a well-established Gaussian-process spectral interpretation; it should not be mistaken for a non-negative prior density.
-3. **Independent adjudication:** `verification.py` records the origin, claim, evidence references, methods, independent reviews, and decision. An originating agent cannot validate its own finding. Each independence group contributes at most one review. Quorums are configurable governance conventions, not universal statistical thresholds.
+2. **Sinc spectral modelling:** `sinc_kernel.py` implements the stationary band-limited Sinc covariance kernel for Gaussian-process models.
+3. **Proper Sinc-based prior:** `sinc_prior.py` implements a non-negative, normalised prior inspired by the Sinc-modulated prior in the second manuscript. It uses a fourth-power Sinc envelope and bounded cosine modulation. This is an explicit mathematical regularisation of the manuscript's proposal, not a verbatim implementation of its raw expression.
+4. **Independent adjudication:** `verification.py` records the origin, claim, evidence references, methods, independent reviews, and decision. An originating agent cannot validate its own finding. Each independence group contributes at most one review. Quorums are configurable governance conventions, not universal statistical thresholds.
 
-### Mathematical qualifications
+### Proper Sinc-modulated prior
 
-The Sinc function changes sign, so the raw Sinc function and the Sinc-times-cosine expression in the second manuscript are not automatically valid probability densities. The latter has a natural interpretation as a positive-semidefinite covariance kernel for a band-limited Gaussian process.
+Let `sinc(u) = sin(pi*u)/(pi*u)`, with `sinc(0)=1`. For a scalar parameter `theta), define `x = theta - mu`, bandwidth multiplier `Delta > 0`, scale `sigma > 0`, centre frequency `xi0 >= 0`, and modulation depth `rho in [0, 1]`. The prior is
 
-Likewise, pointwise bounds on posterior densities do not alone establish weak convergence to a Dirac measure. A rigorous posterior-concentration argument should use probability measures, neighbourhood probabilities, or an appropriate weak-convergence criterion. The balanced inference loss in the second manuscript is not, by itself, a fully specified robust covariance algorithm; model-specific derivation and validation remain necessary.
+```
+pi(theta) = sinc(Delta*x/sigma)^4
+            * (1 + rho*cos(2*pi*xi0*x)) / Z
+```
 
-The new primitives are therefore deliberately conservative. They implement the well-defined covariance and governance operations without asserting that the manuscripts' proposed posterior bounds or reported empirical improvements have already been independently established.
+with exact normaliser
+
+```
+Z = (sigma/Delta) * (2/3 + rho*Lambda4(xi0*sigma/Delta)).
+```
+
+The compactly supported spectral-overlap function is
+
+```
+Lambda4(t) = 2/3 - t^2 + |t|^3/2,       |t| <= 1
+            (2 - |t|)^3/6,             1 < |t| < 2
+            0,                         |t| >= 2.
+```
+
+The identity follows from the Fourier transform of `sinc(u)^4`, which is the convolution of four rectangular spectra (equivalently, the convolution of two triangular spectra). The cosine modulation shifts this spectrum to two sidebands. Since `sinc^4 >= 0` and `1 + rho*cos(...) >= 0`, the density is non-negative. The stated normaliser makes its integral exactly one. Its tails are `O(|theta|^-4)`, giving a finite second moment, while its Fourier transform remains compactly supported.
+
+`SincModulatedPrior` evaluates the univariate density and log-density. `IndependentSincPrior` forms a product across coordinates and therefore explicitly assumes prior independence. Correlated multivariate priors require a separate joint construction. The implementation does not claim to implement the manuscript's original unmodified Sinc-times-cosine expression, which need not be non-negative.
+
+### Remaining mathematical qualifications
+
+Pointwise bounds on posterior densities do not alone establish weak convergence to a Dirac measure. A rigorous posterior-concentration argument should use probability measures, neighbourhood probabilities, or an appropriate weak-convergence criterion. The balanced inference loss in the second manuscript is not, by itself, a fully specified robust covariance algorithm; model-specific derivation and validation remain necessary.
+
+The Sinc prior implemented here is a proper prior primitive, not yet a complete Bayesian posterior engine. The likelihood, posterior computation, balanced-loss correction, convergence diagnostics, and empirical calibration remain separate research tasks. The current primitives do not assert that the manuscripts' reported empirical improvements have already been independently established.
 
 ## Development and testing
 
@@ -136,7 +164,7 @@ The Python workflow runs tests on pushes and pull requests that change source co
 
 ## Implementation status
 
-**Implemented:** GDS-Core structural graph, directed transmission-channel representation, online SLDE, probabilistic task routing, constrained quadratic resource allocation, Sinc covariance kernel, sandwich covariance calculation, and independent verification adjudication; each component has unit tests.
+**Implemented:** GDS-Core structural graph, directed transmission-channel representation, online SLDE, probabilistic task routing, constrained quadratic resource allocation, Sinc covariance kernel, proper Sinc-modulated prior, sandwich covariance calculation, and independent verification adjudication; each component has unit tests.
 
 **Next:** a fully derived Bayesian balanced-loss estimator, posterior-concentration diagnostics, coalition complementarity and coordination costs, calibration of gain and covariance estimates, and reproducible end-to-end evaluation.
 

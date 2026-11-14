@@ -20,6 +20,7 @@ The initial architecture contains one teacher and five students. The students fo
 - **Band-limited modelling:** provide a Sinc covariance kernel for Gaussian-process models.
 - **Proper Sinc-based priors:** provide a non-negative, analytically normalised, Sinc-modulated prior with finite second moment.
 - **Bayesian posterior estimation:** provide a stable one-dimensional posterior reference engine using explicit finite-domain midpoint quadrature.
+- **Bayesian robust variance:** apply the scalar balanced-inference-loss correction to the posterior variance using observation-level scores and empirical Fisher information.
 
 ## Principal research conjecture
 
@@ -40,6 +41,7 @@ This is a falsifiable research conjecture, not an established empirical result. 
 | `src/gds_core/sinc_kernel.py` | Band-limited Sinc covariance kernel for Gaussian-process models |
 | `src/gds_core/sinc_prior.py` | Proper non-negative Sinc-modulated univariate and independent-product priors |
 | `src/gds_core/posterior.py` | One-dimensional posterior estimation with log-likelihoods, quadrature and posterior summaries |
+| `src/gds_core/balanced_loss.py` | Scalar Bayesian balanced-loss variance correction using posterior score-information averaging |
 | `src/gds_core/sandwich.py` | General estimating-equation sandwich covariance calculation |
 | `src/gds_core/verification.py` | Provenance-aware independent claim adjudication |
 | `tests/` | Unit tests for graph, transmission, and SLDE |
@@ -108,11 +110,12 @@ The implementation separates four mathematically distinct ideas:
 1. **Sandwich covariance:** `sandwich.py` computes the general estimating-equation covariance `A^{-1} B A^{-T}`, with an optional division by sample size. It requires model-specific sensitivity and variability inputs. This is not a complete implementation of the Bayesian balanced-loss estimator discussed by Li and Rice.
 2. **Sinc spectral modelling:** `sinc_kernel.py` implements the stationary band-limited Sinc covariance kernel for Gaussian-process models.
 3. **Proper Sinc-based prior:** `sinc_prior.py` implements a non-negative, normalised prior inspired by the Sinc-modulated prior in the second manuscript. It uses a fourth-power Sinc envelope and bounded cosine modulation. This is an explicit mathematical regularisation of the manuscript's proposal, not a verbatim implementation of its raw expression.
-4. **Independent adjudication:** `verification.py` records the origin, claim, evidence references, methods, independent reviews, and decision. An originating agent cannot validate its own finding. Each independence group contributes at most one review. Quorums are configurable governance conventions, not universal statistical thresholds.
+4. **Scalar Bayesian balanced-loss correction:** `balanced_loss.py` implements the one-dimensional specialization of the Li–Rice balanced inference loss. The posterior point estimate remains the posterior mean; the robust variance is the posterior variance multiplied by the posterior expectation of the mean squared observation score divided by the scalar empirical Fisher information. The caller supplies model-specific observation scores and information at each posterior grid point. This assumes independent observations and is not yet a multivariate implementation.
+5. **Independent adjudication:** `verification.py` records the origin, claim, evidence references, methods, independent reviews, and decision. An originating agent cannot validate its own finding. Each independence group contributes at most one review. Quorums are configurable governance conventions, not universal statistical thresholds.
 
 ### Proper Sinc-modulated prior
 
-Let `sinc(u) = sin(pi*u)/(pi*u)`, with `sinc(0)=1`. For a scalar parameter `theta), define `x = theta - mu`, bandwidth multiplier `Delta > 0`, scale `sigma > 0`, centre frequency `xi0 >= 0`, and modulation depth `rho in [0, 1]`. The prior is
+Let `sinc(u) = sin(pi*u)/(pi*u)`, with `sinc(0)=1`. For a scalar parameter `theta`, define `x = theta - mu`, bandwidth multiplier `Delta > 0`, scale `sigma > 0`, centre frequency `xi0 >= 0`, and modulation depth `rho in [0, 1]`. The prior is
 
 ```
 pi(theta) = sinc(Delta*x/sigma)^4
@@ -139,11 +142,15 @@ The identity follows from the Fourier transform of `sinc(u)^4`, which is the con
 
 ### Remaining mathematical qualifications
 
-Pointwise bounds on posterior densities do not alone establish weak convergence to a Dirac measure. A rigorous posterior-concentration argument should use probability measures, neighbourhood probabilities, or an appropriate weak-convergence criterion. The balanced inference loss in the second manuscript is not, by itself, a fully specified robust covariance algorithm; model-specific derivation and validation remain necessary.
+Pointwise bounds on posterior densities do not alone establish weak convergence to a Dirac measure. A rigorous posterior-concentration argument should use probability measures, neighbourhood probabilities, or an appropriate weak-convergence criterion. The balanced inference loss needs model-specific score and information calculations. The scalar implementation follows Proposition 3.1 of Li and Rice (2024); its Bayes point estimate, correction factor, and variance rule are distinct from the ordinary frequentist sandwich covariance calculation in `sandwich.py`.
 
 The Sinc prior implemented here is a proper prior primitive. The module `posterior.py` now adds a one-dimensional Bayesian posterior reference engine. It accepts a log-likelihood callback, conditions the prior on an explicitly declared finite parameter interval, and uses equally spaced midpoint quadrature with log-sum-exp normalisation. It returns cell probabilities and densities, posterior mean and variance, a central credible interval, and the log marginal likelihood under the prior conditioned on that interval.
 
-The finite interval is an explicit modelling choice, not a silent numerical truncation. The result is conditional on the parameter lying within the declared bounds. Grid-refinement checks are necessary for each application; this deterministic one-dimensional implementation is not a multivariate posterior sampler. The balanced-loss correction, formal convergence diagnostics, and empirical calibration remain separate research tasks. The current primitives do not assert that the manuscripts' reported empirical improvements have already been independently established.
+The finite interval is an explicit modelling choice, not a silent numerical truncation. The result is conditional on the parameter lying within the declared bounds. Grid-refinement checks are necessary for each application; this deterministic one-dimensional implementation is not a multivariate posterior sampler.
+
+`balanced_loss_variance_1d` accepts a callback returning the per-observation score vector and the scalar empirical average negative Hessian at each posterior grid point. It computes the posterior expectation of the score-information correction and multiplies that by the posterior variance, following the scalar specialization of Li and Rice (2024), Proposition 3.1. The resulting robust standard error is designed to reflect repeated-sampling variability under model misspecification; it is not a Bayesian credible interval. The derivation in Li and Rice assumes independent observations. Dependence, clustered data, and multivariate parameters require appropriate extensions.
+
+The current components remain reference primitives. Formal posterior-concentration diagnostics, multivariate inference, and empirical calibration remain separate research tasks. The code does not assert that the manuscripts' reported empirical improvements have already been independently established.
 
 ## Development and testing
 
@@ -168,8 +175,8 @@ The Python workflow runs tests on pushes and pull requests that change source co
 
 ## Implementation status
 
-**Implemented:** GDS-Core structural graph, directed transmission-channel representation, online SLDE, probabilistic task routing, constrained quadratic resource allocation, Sinc covariance kernel, proper Sinc-modulated prior, one-dimensional Bayesian posterior reference engine, sandwich covariance calculation, and independent verification adjudication; each component has unit tests.
+**Implemented:** GDS-Core structural graph, directed transmission-channel representation, online SLDE, probabilistic task routing, constrained quadratic resource allocation, Sinc covariance kernel, proper Sinc-modulated prior, one-dimensional Bayesian posterior reference engine, scalar Bayesian balanced-loss variance correction, frequentist sandwich covariance calculation, and independent verification adjudication; each component has unit tests.
 
-**Next:** a fully derived Bayesian balanced-loss estimator, adaptive or higher-order posterior integration, multivariate posterior computation, posterior-concentration diagnostics, coalition complementarity and coordination costs, calibration of gain and covariance estimates, and reproducible end-to-end evaluation.
+**Next:** adaptive or higher-order posterior integration, multivariate posterior computation and matrix-valued balanced-loss extension, posterior-concentration diagnostics, coalition complementarity and coordination costs, calibration of gain and covariance estimates, and reproducible end-to-end evaluation.
 
 The PDF treatise provides the theoretical specification and empirical research programme. Claims of performance superiority remain subject to implementation, replication, and independent validation.

@@ -33,12 +33,12 @@ jobs:
             --points 1024 \
             --seed 20261114 \
             --true-sds 1.0 2.0 \
-            > normal_mean_misspecification_results.json
-          cat normal_mean_misspecification_results.json
+            > expanded_bayesian_misspecification_results.json
+          cat expanded_bayesian_misspecification_results.json
       - name: Upload Monte Carlo results
         uses: actions/upload-artifact@v4
         with:
-          name: gds-normal-mean-misspecification-results
+          name: gds-expanded-bayesian-misspecification-results
           path: normal_mean_misspecification_results.json
           if-no-files-found: error
           retention-days: 30

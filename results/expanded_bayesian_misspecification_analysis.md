@@ -36,7 +36,7 @@ The working likelihood is independent Normal(theta, 1). For this location model,
 
 | Data-generating process | Posterior 95% coverage | Balanced-loss robust Wald 95% coverage | Mean robust SE | Oracle SE | Robust/oracle variance ratio |
 |---|---:|---:|---:|---:|---:|
-| Normal, SD 1 | 96% | 93% | 0.1092 | 0.1118 | 0.958 |
+| Normal, SD 1 | 96% | 93% | 0.1091 | 0.1118 | 0.958 |
 | Normal, SD 2 | 61% | 97% | 0.2161 | 0.2236 | 0.941 |
 | Student-t(5), variance 4 | 65% | 95% | 0.2166 | 0.2236 | 0.953 |
 | Heteroskedastic Normal, average variance 4 | 60% | 93% | 0.2140 | 0.2236 | 0.925 |

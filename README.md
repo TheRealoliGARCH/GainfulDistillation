@@ -15,6 +15,9 @@ The initial architecture contains one teacher and five students. The students fo
 - **Resource allocation:** allocates compute according to expected marginal verified gain, covariance, cost, and risk.
 - **Stability and diversity controls:** constrain error propagation and reduce epistemic collapse.
 - **External validation and governance:** distinguish transmission, investigation, verification, and integration.
+- **Independent adjudication:** retain claim provenance and require distinct independent review groups before verification.
+- **Robust covariance diagnostics:** compute estimating-equation sandwich covariance when sensitivity and variability matrices are supplied.
+- **Band-limited modelling:** provide a Sinc covariance kernel for Gaussian-process models.
 
 ## Principal research conjecture
 
@@ -32,6 +35,9 @@ This is a falsifiable research conjecture, not an established empirical result. 
 | `src/gds_core/slde.py` | Online Student Learning Dynamics Estimator |
 | `src/gds_core/routing.py` | Probabilistic task routing and coalition shortlists |
 | `src/gds_core/resource_allocation.py` | Constrained quadratic resource allocation |
+| `src/gds_core/sinc_kernel.py` | Band-limited Sinc covariance kernel for Gaussian-process models |
+| `src/gds_core/sandwich.py` | General estimating-equation sandwich covariance calculation |
+| `src/gds_core/verification.py` | Provenance-aware independent claim adjudication |
 | `tests/` | Unit tests for graph, transmission, and SLDE |
 | `pyproject.toml` | Python package and test configuration |
 | `.github/workflows/python-tests.yml` | Automated Python test workflow |
@@ -86,6 +92,27 @@ The implementation uses projected gradient ascent over a capped simplex, with a 
 
 A result with `converged=False` is an iteration-limited approximation and must not be represented as an optimum. Covariance estimates and expected gains must be calibrated to compatible units and estimated from appropriate held-out or historical data. The allocator does not infer covariance from SLDE standard errors, and it does not yet impose group-level, task-specific, or coalition-complementarity constraints.
 
+## Bayesian and external-validation research layer
+
+Two repository manuscripts motivate this layer:
+
+- *A Novel Approach to Bayesian Estimation using the Sandwich Theorem and the Sinc Function*.
+- *A Second Novel Approach to Bayesian Estimation using the Sandwich Theorem and the Sinc Function*.
+
+The implementation separates three mathematically distinct ideas:
+
+1. **Sandwich covariance:** `sandwich.py` computes the general estimating-equation covariance `A^{-1} B A^{-T}`, with an optional division by sample size. It requires model-specific sensitivity and variability inputs. This is not a complete implementation of the Bayesian balanced-loss estimator discussed by Li and Rice.
+2. **Sinc spectral modelling:** `sinc_kernel.py` implements the stationary band-limited Sinc covariance kernel. The Sinc function is treated as a covariance kernel, not as a probability density. The Sinc-times-cosine expression has a well-established Gaussian-process spectral interpretation; it should not be mistaken for a non-negative prior density.
+3. **Independent adjudication:** `verification.py` records the origin, claim, evidence references, methods, independent reviews, and decision. An originating agent cannot validate its own finding. Each independence group contributes at most one review. Quorums are configurable governance conventions, not universal statistical thresholds.
+
+### Mathematical qualifications
+
+The Sinc function changes sign, so the raw Sinc function and the Sinc-times-cosine expression in the second manuscript are not automatically valid probability densities. The latter has a natural interpretation as a positive-semidefinite covariance kernel for a band-limited Gaussian process.
+
+Likewise, pointwise bounds on posterior densities do not alone establish weak convergence to a Dirac measure. A rigorous posterior-concentration argument should use probability measures, neighbourhood probabilities, or an appropriate weak-convergence criterion. The balanced inference loss in the second manuscript is not, by itself, a fully specified robust covariance algorithm; model-specific derivation and validation remain necessary.
+
+The new primitives are therefore deliberately conservative. They implement the well-defined covariance and governance operations without asserting that the manuscripts' proposed posterior bounds or reported empirical improvements have already been independently established.
+
 ## Development and testing
 
 Python 3.10 or later is required:
@@ -109,8 +136,8 @@ The Python workflow runs tests on pushes and pull requests that change source co
 
 ## Implementation status
 
-**Implemented:** GDS-Core structural graph, directed transmission-channel representation, online SLDE, probabilistic task routing, and constrained quadratic resource allocation; each component has unit tests.
+**Implemented:** GDS-Core structural graph, directed transmission-channel representation, online SLDE, probabilistic task routing, constrained quadratic resource allocation, Sinc covariance kernel, sandwich covariance calculation, and independent verification adjudication; each component has unit tests.
 
-**Next:** coalition complementarity and coordination costs, external validation, calibration of gain and covariance estimates, and reproducible end-to-end evaluation.
+**Next:** a fully derived Bayesian balanced-loss estimator, posterior-concentration diagnostics, coalition complementarity and coordination costs, calibration of gain and covariance estimates, and reproducible end-to-end evaluation.
 
 The PDF treatise provides the theoretical specification and empirical research programme. Claims of performance superiority remain subject to implementation, replication, and independent validation.

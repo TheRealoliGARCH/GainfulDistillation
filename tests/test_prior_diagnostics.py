@@ -254,3 +254,76 @@ def test_prior_concentration_threshold_is_configurable():
 def test_prior_bias_thresholds_reject_invalid_concentration_ratio():
     with pytest.raises(ValueError):
         PriorBiasThresholds(minimum_prior_to_reference_sd_ratio=-0.1)
+
+
+
+def test_contamination_robust_prior_is_proper_and_more_diffuse():
+    from math import log
+    from gds_core.sinc_prior import SincPriorMixture, contamination_robust_prior
+
+    nominal = SincModulatedPrior(
+        location=-1.0, bandwidth=1.0, scale=0.8,
+        center_frequency=0.2, modulation_depth=0.7,
+    )
+    robust = contamination_robust_prior(
+        nominal, contamination_weight=0.15, scale_multiplier=6.0,
+    )
+    assert isinstance(robust, SincPriorMixture)
+    assert sum(weight for weight, _ in robust.components) == pytest.approx(1.0)
+    assert robust.density(0.0) > 0.0
+    assert robust.log_density(0.0) == pytest.approx(log(robust.density(0.0)))
+    nominal_summary = summarize_prior_1d(nominal, bounds=(-8.0, 8.0), points=4096)
+    robust_summary = summarize_prior_1d(robust, bounds=(-8.0, 8.0), points=4096)
+    assert robust_summary.conditional_standard_deviation > nominal_summary.conditional_standard_deviation
+    assert robust_summary.conditional_mean == pytest.approx(nominal_summary.conditional_mean, abs=0.03)
+
+
+def test_mixture_prior_can_be_used_in_posterior_and_predictive_check():
+    from gds_core.sinc_prior import contamination_robust_prior
+
+    prior = contamination_robust_prior(
+        SincModulatedPrior(location=0.2, scale=0.6),
+        contamination_weight=0.1,
+        scale_multiplier=5.0,
+    )
+    posterior = compute_posterior_1d(
+        prior, lambda theta: -0.5 * ((theta - 0.5) / 0.2) ** 2,
+        bounds=(-6.0, 6.0), points=2048,
+    )
+    predictive = prior_predictive_check_1d(
+        prior, lambda theta, rng: rng.gauss(theta, 0.1),
+        bounds=(-6.0, 6.0), draws=100, points=1024, seed=9,
+    )
+    assert posterior.standard_deviation > 0.0
+    assert predictive.predictive_variance > 0.0
+
+
+def test_contamination_robust_prior_rejects_invalid_configuration():
+    from gds_core.sinc_prior import contamination_robust_prior
+
+    nominal = SincModulatedPrior()
+    for kwargs in (
+        {"contamination_weight": 0.0},
+        {"contamination_weight": 1.0},
+        {"contamination_weight": float("nan")},
+        {"scale_multiplier": 1.0},
+        {"scale_multiplier": float("inf")},
+    ):
+        with pytest.raises(ValueError):
+            contamination_robust_prior(nominal, **kwargs)
+
+
+def test_bias_diagnostic_warns_on_large_signed_overshoot():
+    prior = SincModulatedPrior(location=1.0, bandwidth=1.0, scale=1.0)
+    summary = summarize_prior_1d(prior, bounds=(-6.0, 6.0), points=2048)
+    posterior = compute_posterior_1d(
+        prior, lambda theta: -0.5 * ((theta + 1.0) / 0.15) ** 2,
+        bounds=(-6.0, 6.0), points=4096,
+    )
+    diagnostic = assess_posterior_bias_1d(
+        summary, posterior, likelihood_reference=0.0,
+        reference_standard_error=0.15,
+    )
+    assert diagnostic.posterior_pull_fraction < 0.0
+    assert abs(diagnostic.posterior_pull_fraction) > 0.5
+    assert any("overshoot" in warning for warning in diagnostic.warnings)

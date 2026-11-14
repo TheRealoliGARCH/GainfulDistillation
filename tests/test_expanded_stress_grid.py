@@ -33,6 +33,13 @@ def test_expanded_stress_grid_is_reproducible_and_returns_full_cell_grid():
         assert result["mle_rmse"] >= 0.0
         assert result["robust_to_empirical_sandwich_variance_ratio"] > 0.0
         assert result["robust_to_theoretical_variance_ratio"] > 0.0
+        assert result["mean_prior_retained_mass"] > 0.0
+        assert result["mean_prior_central_interval_width"] > 0.0
+        assert result["mean_prior_boundary_cell_mass"] >= 0.0
+        assert result["mean_absolute_prior_reference_gap_z"] >= 0.0
+        assert result["mean_absolute_posterior_reference_gap_z"] >= 0.0
+        assert 0.0 <= result["prior_reference_conflict_warning_rate"] <= 1.0
+        assert 0.0 <= result["posterior_pull_warning_rate"] <= 1.0
 
 
 def test_stress_grid_uses_common_random_datasets_across_prior_variants():

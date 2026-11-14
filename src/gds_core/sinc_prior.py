@@ -19,7 +19,7 @@ to the two sidebands. The normalising constant is evaluated analytically.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from math import cos, isfinite, log, pi, sin
+from math import cos, exp, fsum, isfinite, log, pi, sin
 from typing import Sequence
 
 from .sinc_kernel import normalized_sinc
@@ -155,6 +155,109 @@ class SincModulatedPrior:
             + log(modulation)
             - log(self.normalization_constant)
         )
+
+
+
+@dataclass(frozen=True)
+class SincPriorMixture:
+    """A finite mixture of proper Sinc-modulated scalar priors.
+
+    Components are pairs of (positive mixture weight, SincModulatedPrior).
+    Weights are normalised on construction. A mixture remains a proper,
+    non-negative prior and can be used by the scalar posterior and diagnostic
+    routines. The components are deliberately kept explicit for auditability.
+    """
+
+    components: tuple[tuple[float, SincModulatedPrior], ...]
+
+    def __post_init__(self) -> None:
+        try:
+            raw_components = tuple(self.components)
+        except TypeError as exc:
+            raise ValueError("components must be a sequence of weighted priors") from exc
+        if len(raw_components) < 2:
+            raise ValueError("a prior mixture requires at least two components")
+
+        checked: list[tuple[float, SincModulatedPrior]] = []
+        for item in raw_components:
+            if not isinstance(item, (tuple, list)) or len(item) != 2:
+                raise ValueError("each component must be a (weight, prior) pair")
+            raw_weight, prior = item
+            if isinstance(raw_weight, bool):
+                raise ValueError("mixture weights must be positive finite numbers")
+            try:
+                weight = float(raw_weight)
+            except (TypeError, ValueError, OverflowError) as exc:
+                raise ValueError("mixture weights must be positive finite numbers") from exc
+            if not isfinite(weight) or weight <= 0.0:
+                raise ValueError("mixture weights must be positive finite numbers")
+            if not isinstance(prior, SincModulatedPrior):
+                raise TypeError("each mixture component must be a SincModulatedPrior")
+            checked.append((weight, prior))
+
+        total = fsum(weight for weight, _ in checked)
+        object.__setattr__(
+            self,
+            "components",
+            tuple((weight / total, prior) for weight, prior in checked),
+        )
+
+    def density(self, value: float) -> float:
+        """Evaluate the normalised mixture density."""
+        return fsum(weight * prior.density(value) for weight, prior in self.components)
+
+    def log_density(self, value: float) -> float:
+        """Evaluate the mixture log-density with log-sum-exp stability."""
+        terms = tuple(
+            log(weight) + prior.log_density(value)
+            for weight, prior in self.components
+        )
+        finite_terms = tuple(term for term in terms if term != float("-inf"))
+        if not finite_terms:
+            return float("-inf")
+        maximum = max(finite_terms)
+        return maximum + log(fsum(exp(term - maximum) for term in finite_terms))
+
+
+def contamination_robust_prior(
+    prior: SincModulatedPrior,
+    *,
+    contamination_weight: float = 0.10,
+    scale_multiplier: float = 5.0,
+) -> SincPriorMixture:
+    """Mix a nominal Sinc prior with a diffuse same-centre component.
+
+    This is an explicit robustification against excessive prior concentration.
+    The diffuse component shares the nominal prior's location and bandwidth,
+    has scale multiplied by scale_multiplier, and has no spectral modulation.
+    It therefore does not correct a misspecified prior location; it only
+    reduces the influence of a sharply concentrated nominal prior.
+
+    The contamination weight must lie strictly between zero and one, and the
+    scale multiplier must exceed one. The returned prior is a proper mixture.
+    """
+    if not isinstance(prior, SincModulatedPrior):
+        raise TypeError("prior must be a SincModulatedPrior")
+    if isinstance(contamination_weight, bool) or isinstance(scale_multiplier, bool):
+        raise ValueError("mixture settings must be finite real numbers")
+    try:
+        weight = float(contamination_weight)
+        multiplier = float(scale_multiplier)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError("mixture settings must be finite real numbers") from exc
+    if not isfinite(weight) or not 0.0 < weight < 1.0:
+        raise ValueError("contamination_weight must lie strictly between zero and one")
+    if not isfinite(multiplier) or multiplier <= 1.0:
+        raise ValueError("scale_multiplier must be finite and greater than one")
+
+    diffuse = SincModulatedPrior(
+        location=prior.location,
+        bandwidth=prior.bandwidth,
+        scale=prior.scale * multiplier,
+        center_frequency=0.0,
+        modulation_depth=0.0,
+    )
+    return SincPriorMixture(((1.0 - weight, prior), (weight, diffuse)))
 
 
 @dataclass(frozen=True)

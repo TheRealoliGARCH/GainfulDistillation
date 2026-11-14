@@ -21,6 +21,7 @@ The initial architecture contains one teacher and five students. The students fo
 - **Proper Sinc-based priors:** provide a non-negative, analytically normalised, Sinc-modulated prior with finite second moment.
 - **Bayesian posterior estimation:** provide a stable one-dimensional posterior reference engine using explicit finite-domain midpoint quadrature.
 - **Bayesian robust variance:** apply the scalar balanced-inference-loss correction to the posterior variance using observation-level scores and empirical Fisher information.
+- **Prior-predictive and shrinkage diagnostics:** examine prior-data compatibility, finite-domain truncation, prior concentration, and posterior displacement from a likelihood-only reference.
 
 ## Principal research conjecture
 
@@ -41,6 +42,7 @@ This is a falsifiable research conjecture, not an established empirical result. 
 | `src/gds_core/sinc_kernel.py` | Band-limited Sinc covariance kernel for Gaussian-process models |
 | `src/gds_core/sinc_prior.py` | Proper non-negative Sinc-modulated univariate and independent-product priors |
 | `src/gds_core/posterior.py` | One-dimensional posterior estimation with log-likelihoods, quadrature and posterior summaries |
+| `src/gds_core/prior_diagnostics.py` | Prior-predictive checks, finite-bound prior summaries, and posterior-shrinkage diagnostics |
 | `src/gds_core/balanced_loss.py` | Scalar Bayesian balanced-loss variance correction using posterior score-information averaging |
 | `experiments/expanded_stress_grid.py` | Multi-distribution, multi-sample-size and multi-prior Monte Carlo stress grid |
 | `experiments/normal_mean_misspecification.py` | Reproducible Monte Carlo study under correct and misspecified Normal likelihood variance |
@@ -169,9 +171,9 @@ pull = (posterior_mean - likelihood_reference)
 
 Values near one indicate that the posterior mean remains close to the prior mean relative to the likelihood reference; values near zero indicate that it is close to the likelihood reference. Values outside [0, 1] are possible. The standardized gap and pull fraction are descriptive diagnostics, not calibrated hypothesis tests and not estimates of frequentist bias from a single dataset. Actual frequentist bias is assessed across repeated samples.
 
-Diagnostic thresholds are configurable through `PriorBiasThresholds`. The functions issue warnings; they do not automatically recenter, temper, truncate, or reject a prior. That choice remains explicit and auditable.
+Diagnostic thresholds are configurable through `PriorBiasThresholds`. Prior concentration is measured by the ratio of prior standard deviation to the likelihood-reference standard error; this is scale-aware rather than a fixed interval-width threshold. The functions issue warnings; they do not automatically recenter, temper, truncate, or reject a prior. That choice remains explicit and auditable.
 
-The 144-cell experiment in `expanded_stress_grid.py` now also reports prior-reference conflict warning rates, posterior-pull warning rates, retained prior mass, prior interval width, and standardized reference gaps for each data-generating process, sample size, and prior configuration. These fields allow prior sensitivity and mean displacement to be examined alongside variance calibration.
+The 144-cell experiment in `expanded_stress_grid.py` now also reports prior-reference conflict warning rates, posterior-pull warning rates, prior-concentration warning rates, prior-to-reference standard-deviation ratios, retained prior mass, prior interval width, and standardized reference gaps for each data-generating process, sample size, and prior configuration. These fields allow prior sensitivity and mean displacement to be examined alongside variance calibration.
 
 ### Monte Carlo experiment
 
@@ -276,6 +278,6 @@ The Python workflow runs tests on pushes and pull requests that change source co
 
 **Implemented:** GDS-Core structural graph, directed transmission-channel representation, online SLDE, probabilistic task routing, constrained quadratic resource allocation, Sinc covariance kernel, proper Sinc-modulated prior, one-dimensional Bayesian posterior reference engine, scalar Bayesian balanced-loss variance correction, prior-predictive and posterior-shrinkage diagnostics, frequentist sandwich covariance calculation, independent verification adjudication, and reproducible Normal-mean and expanded robustness Monte Carlo experiments; core components and experiment entry points have automated tests.
 
-**Next:** extend posterior computation and balanced-loss correction to multivariate parameters; develop posterior-concentration and prior-predictive diagnostics for additional statistics; evaluate explicit bias-mitigation strategies without hiding prior-data conflict; replicate the NHANES application; and evaluate GDS end-to-end under matched compute and data budgets.
+**Next:** extend posterior computation and balanced-loss correction to multivariate parameters; develop posterior-predictive checks for additional statistics; evaluate explicit bias-mitigation strategies without hiding prior-data conflict; replicate the NHANES application; and evaluate GDS end-to-end under matched compute and data budgets.
 
 The PDF treatise provides the theoretical specification and empirical research programme. Claims of performance superiority remain subject to implementation, replication, and independent validation.

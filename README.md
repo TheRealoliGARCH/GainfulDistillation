@@ -165,6 +165,17 @@ python experiments/normal_mean_misspecification.py
 
 The sample size, number of repetitions, quadrature points, seed, true parameter, and true standard deviations can be changed with command-line arguments. The robust Wald interval is a repeated-sampling interval and must not be described as a posterior credible interval.
 
+The first recorded run used seed 20261114, sample size 80, 200 replications per scenario, and 1,024 quadrature points. Results are archived at `results/normal_mean_misspecification_seed_20261114.json`.
+
+| True observation SD | Mean posterior SD | Mean robust SE | Mean sandwich SE | Posterior 95% coverage | Robust Wald 95% coverage | Robust/sandwich variance ratio |
+|---:|---:|---:|---:|---:|---:|---:|
+| 1.0 (correct) | 0.1093 | 0.1093 | 0.1119 | 0.925 | 0.930 | 0.955 |
+| 2.0 (misspecified) | 0.1092 | 0.2149 | 0.2211 | 0.700 | 0.945 | 0.945 |
+
+Monte Carlo standard errors for the posterior and robust coverage estimates, respectively, were 0.0186 and 0.0180 in the correctly specified scenario, and 0.0324 and 0.0161 in the misspecified scenario.
+
+In this run, the ordinary posterior interval materially under-covered when the working likelihood variance was wrong, while the balanced-loss robust Wald interval was close to nominal coverage and the average robust variance was within roughly 5.5% of the frequentist sandwich variance. These are results for this particular simulation design and seed, not a general performance guarantee. More repetitions, alternative data-generating processes, prior-sensitivity analysis, and independent replication remain necessary.
+
 ## Development and testing
 
 Python 3.10 or later is required:

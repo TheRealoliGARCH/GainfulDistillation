@@ -1,0 +1,44 @@
+name: Bayesian Misspecification Study
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "src/gds_core/balanced_loss.py"
+      - "src/gds_core/posterior.py"
+      - "src/gds_core/sinc_prior.py"
+      - "experiments/normal_mean_misspecification.py"
+      - ".github/workflows/bayesian-misspecification-study.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  monte-carlo:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install GDS
+        run: python -m pip install .
+      - name: Run reproducible Monte Carlo study
+        run: |
+          python experiments/normal_mean_misspecification.py \
+            --sample-size 80 \
+            --repetitions 200 \
+            --points 1024 \
+            --seed 20261114 \
+            --true-sds 1.0 2.0 \
+            > normal_mean_misspecification_results.json
+          cat normal_mean_misspecification_results.json
+      - name: Upload Monte Carlo results
+        uses: actions/upload-artifact@v4
+        with:
+          name: gds-normal-mean-misspecification-results
+          path: normal_mean_misspecification_results.json
+          if-no-files-found: error
+          retention-days: 30

@@ -16,6 +16,15 @@ from .graph import (
     weighted_degree,
 )
 from .posterior import Posterior1D, compute_posterior_1d
+from .prior_diagnostics import (
+    PosteriorBiasDiagnostic1D,
+    PriorBiasThresholds,
+    PriorPredictiveResult1D,
+    PriorSummary1D,
+    assess_posterior_bias_1d,
+    prior_predictive_check_1d,
+    summarize_prior_1d,
+)
 from .resource_allocation import ResourceAllocationResult, allocate_resources
 from .routing import (
     RoutingDecision,
@@ -53,6 +62,10 @@ __all__ = [
     "BalancedLossVariance1D",
     "NODE_LABELS",
     "Posterior1D",
+    "PosteriorBiasDiagnostic1D",
+    "PriorBiasThresholds",
+    "PriorPredictiveResult1D",
+    "PriorSummary1D",
     "STUDENT_INDICES",
     "Finding",
     "IndependentSincPrior",
@@ -75,17 +88,20 @@ __all__ = [
     "VerificationStatus",
     "adjudicate",
     "allocate_resources",
+    "assess_posterior_bias_1d",
     "balanced_loss_variance_1d",
     "build_adjacency_matrix",
     "candidate_from_slde",
     "compute_posterior_1d",
     "normalized_sinc",
+    "prior_predictive_check_1d",
     "route_task",
     "sandwich_covariance",
     "sinc_covariance",
     "sinc_covariance_matrix",
     "sinc4_spectral_overlap",
     "student_edge_multiplicity",
+    "summarize_prior_1d",
     "validate_topology",
     "weighted_degree",
 ]

@@ -33,6 +33,11 @@ from gds_core.balanced_loss import (
     balanced_loss_variance_1d,
 )
 from gds_core.posterior import compute_posterior_1d
+from gds_core.prior_diagnostics import (
+    PriorBiasThresholds,
+    assess_posterior_bias_1d,
+    summarize_prior_1d,
+)
 from gds_core.sinc_prior import SincModulatedPrior
 
 
@@ -195,9 +200,11 @@ def _summarise_fit(
     *,
     theta_true: float,
     prior: SincModulatedPrior,
+    prior_summary,
     bounds: tuple[float, float],
     points: int,
-) -> dict[str, float]:
+    bias_thresholds: PriorBiasThresholds,
+) -> dict[str, Any]:
     n = len(observations)
     sample_mean = fsum(observations) / n
     centred_sum_squares = fsum(
@@ -226,6 +233,21 @@ def _summarise_fit(
     robust = balanced_loss_variance_1d(posterior, score_information)
     sandwich_variance = sample_variance / n
     sandwich_se = sqrt(sandwich_variance)
+    bias_diagnostic = assess_posterior_bias_1d(
+        prior_summary,
+        posterior,
+        likelihood_reference=sample_mean,
+        reference_standard_error=sandwich_se,
+        thresholds=bias_thresholds,
+    )
+    prior_conflict_flag = float(any(
+        "Prior mean is materially separated" in warning
+        for warning in bias_diagnostic.warnings
+    ))
+    posterior_pull_flag = float(any(
+        "Posterior mean remains materially displaced" in warning
+        for warning in bias_diagnostic.warnings
+    ))
 
     credible_lower, credible_upper = posterior.credible_interval
     robust_lower = posterior.mean - Z_975 * robust.robust_standard_error
@@ -252,6 +274,27 @@ def _summarise_fit(
         "boundary_cell_mass": (
             posterior.probability_masses[0] + posterior.probability_masses[-1]
         ),
+        "prior_mean": bias_diagnostic.prior_mean,
+        "prior_reference_gap": bias_diagnostic.prior_reference_gap,
+        "posterior_reference_gap": bias_diagnostic.posterior_reference_gap,
+        "prior_reference_gap_z": (
+            bias_diagnostic.prior_reference_gap_z
+            if bias_diagnostic.prior_reference_gap_z is not None else 0.0
+        ),
+        "posterior_reference_gap_z": (
+            bias_diagnostic.posterior_reference_gap_z
+            if bias_diagnostic.posterior_reference_gap_z is not None else 0.0
+        ),
+        "posterior_pull_fraction": (
+            bias_diagnostic.posterior_pull_fraction
+            if bias_diagnostic.posterior_pull_fraction is not None else 0.0
+        ),
+        "prior_retained_mass": bias_diagnostic.retained_prior_mass,
+        "prior_interval_width": prior_summary.interval_width,
+        "prior_boundary_cell_mass": prior_summary.boundary_cell_mass,
+        "prior_conflict_flag": prior_conflict_flag,
+        "posterior_pull_flag": posterior_pull_flag,
+        "prior_bias_warning_count": float(len(bias_diagnostic.warnings)),
     }
 
 
@@ -335,6 +378,30 @@ def _aggregate(
         "mean_posterior_boundary_cell_mass": mean(
             record["boundary_cell_mass"] for record in records
         ),
+        "mean_absolute_prior_reference_gap_z": mean(
+            abs(record["prior_reference_gap_z"]) for record in records
+        ),
+        "mean_absolute_posterior_reference_gap_z": mean(
+            abs(record["posterior_reference_gap_z"]) for record in records
+        ),
+        "mean_posterior_pull_fraction": mean(
+            record["posterior_pull_fraction"] for record in records
+        ),
+        "prior_reference_conflict_warning_rate": mean(
+            record["prior_conflict_flag"] for record in records
+        ),
+        "posterior_pull_warning_rate": mean(
+            record["posterior_pull_flag"] for record in records
+        ),
+        "mean_prior_retained_mass": mean(
+            record["prior_retained_mass"] for record in records
+        ),
+        "mean_prior_central_interval_width": mean(
+            record["prior_interval_width"] for record in records
+        ),
+        "mean_prior_boundary_cell_mass": mean(
+            record["prior_boundary_cell_mass"] for record in records
+        ),
     }
 
 
@@ -348,6 +415,7 @@ def run_stress_grid(
     bounds: tuple[float, float] = (-8.0, 8.0),
     scenarios: tuple[DataScenario, ...] = SCENARIOS,
     priors: tuple[PriorSpec, ...] = PRIORS,
+    bias_thresholds: PriorBiasThresholds = PriorBiasThresholds(),
 ) -> dict[str, Any]:
     if not sample_sizes or any(
         isinstance(n, bool) or not isinstance(n, int) or n < 2 for n in sample_sizes
@@ -362,8 +430,22 @@ def run_stress_grid(
     if bounds[0] >= bounds[1]:
         raise ValueError("bounds must be strictly increasing")
 
+    if not isinstance(bias_thresholds, PriorBiasThresholds):
+        raise TypeError("bias_thresholds must be PriorBiasThresholds")
+
     rng = random.Random(seed)
     results: list[dict[str, Any]] = []
+    prior_objects = {
+        prior_spec.name: prior_spec.build() for prior_spec in priors
+    }
+    prior_summaries = {
+        prior_spec.name: summarize_prior_1d(
+            prior_objects[prior_spec.name],
+            bounds=bounds,
+            points=points,
+        )
+        for prior_spec in priors
+    }
 
     # Common random numbers: each generated dataset is evaluated under every
     # prior specification, improving the comparability of prior sensitivity.
@@ -372,10 +454,6 @@ def run_stress_grid(
             buckets: dict[str, list[dict[str, float]]] = {
                 prior_spec.name: [] for prior_spec in priors
             }
-            prior_objects = {
-                prior_spec.name: prior_spec.build() for prior_spec in priors
-            }
-
             for _ in range(repetitions):
                 observations = _draw_sample(
                     rng,
@@ -388,8 +466,10 @@ def run_stress_grid(
                         observations,
                         theta_true=theta_true,
                         prior=prior_objects[prior_spec.name],
+                        prior_summary=prior_summaries[prior_spec.name],
                         bounds=bounds,
                         points=points,
+                        bias_thresholds=bias_thresholds,
                     )
                     buckets[prior_spec.name].append(fit)
 
@@ -425,6 +505,12 @@ def run_stress_grid(
             "prior_count": len(priors),
             "cell_count": len(results),
             "common_random_numbers_across_priors": True,
+            "prior_bias_thresholds": {
+                "max_prior_reference_gap_z": bias_thresholds.max_prior_reference_gap_z,
+                "max_posterior_pull_fraction": bias_thresholds.max_posterior_pull_fraction,
+                "max_boundary_cell_mass": bias_thresholds.max_boundary_cell_mass,
+                "minimum_retained_prior_mass": bias_thresholds.minimum_retained_prior_mass,
+            },
         },
         "scenario_definitions": [
             {

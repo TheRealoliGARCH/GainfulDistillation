@@ -79,3 +79,32 @@ def test_bias_control_stress_grid_rejects_invalid_settings(kwargs):
     settings.update(kwargs)
     with pytest.raises(ValueError):
         run_stress_grid(**settings)
+
+
+def test_cached_posterior_matches_reference_midpoint_engine():
+    from gds_core.posterior import compute_posterior_1d
+    from gds_core.sinc_prior import contamination_robust_prior
+    from experiments.prior_bias_control_stress import (
+        _build_prior_grid_cache,
+        _compute_posterior_from_cache,
+    )
+
+    prior = contamination_robust_prior(
+        SincModulatedPrior(location=-0.5, scale=2.0),
+        contamination_weight=0.2,
+        scale_multiplier=5.0,
+    )
+    log_likelihood = lambda theta: -0.5 * ((theta - 0.3) / 0.4) ** 2
+    bounds = (-16.0, 16.0)
+    points = 1024
+    reference = compute_posterior_1d(
+        prior, log_likelihood, bounds=bounds, points=points,
+    )
+    cache = _build_prior_grid_cache(prior, bounds=bounds, points=points)
+    cached = _compute_posterior_from_cache(cache, log_likelihood)
+    assert cached.mean == pytest.approx(reference.mean, abs=1e-12)
+    assert cached.variance == pytest.approx(reference.variance, abs=1e-12)
+    assert cached.credible_interval == pytest.approx(reference.credible_interval, abs=1e-12)
+    assert cached.log_marginal_likelihood == pytest.approx(
+        reference.log_marginal_likelihood, abs=1e-12,
+    )

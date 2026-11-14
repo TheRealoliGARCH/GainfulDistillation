@@ -12,6 +12,7 @@ on:
     paths:
       - "src/**"
       - "tests/**"
+      - "experiments/**"
       - "pyproject.toml"
       - ".github/workflows/python-tests.yml"
   workflow_dispatch:

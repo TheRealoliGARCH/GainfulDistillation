@@ -205,7 +205,7 @@ The completed seed-20261115 run is also archived in `results/expanded_stress_gri
 
 ### Supplemental high-variance and prior-paired grid
 
-The seed-2026111401 study complements the 144-cell stress grid above by deliberately raising the variance in the misspecified Normal, Student-t(5), and heteroskedastic cases. Its 48 results are archived in `results/expanded_bayesian_misspecification_seed_2026111401.json`, and the run is available at [Bayesian Misspecification Study](https://github.com/TheRealoliGARCH/GainfulDistillation/actions/runs/43588473245).
+The seed-2026111401 study complements the 144-cell stress grid above by deliberately raising the variance in the misspecified Normal, Student-t(5), and heteroskedastic cases. Its 48 results are archived in `results/expanded_bayesian_misspecification_seed_2026111401.json`, and the run is available at [Bayesian Misspecification Study](https://github.com/TheRealoliGARCH/GainfulDistillation/actions/runs/43588473245). The detailed interpretation is in [`expanded_bayesian_misspecification_analysis.md`](results/expanded_bayesian_misspecification_analysis.md).
 
 For the centered diffuse prior at sample size 80, the results were:
 

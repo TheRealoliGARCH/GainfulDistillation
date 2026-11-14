@@ -9,6 +9,7 @@ from .graph import (
     validate_topology,
     weighted_degree,
 )
+from .resource_allocation import ResourceAllocationResult, allocate_resources
 from .routing import (
     RoutingDecision,
     RoutingWeights,
@@ -31,6 +32,7 @@ __all__ = [
     "STUDENT_INDICES",
     "LearningObservation",
     "MetricEstimate",
+    "ResourceAllocationResult",
     "RoutingDecision",
     "RoutingWeights",
     "SLDEEstimate",
@@ -38,6 +40,7 @@ __all__ = [
     "TaskCandidate",
     "TaskRequest",
     "TransmissionWeights",
+    "allocate_resources",
     "build_adjacency_matrix",
     "candidate_from_slde",
     "route_task",

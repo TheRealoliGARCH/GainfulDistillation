@@ -249,6 +249,10 @@ def _summarise_fit(
         "Posterior mean remains materially displaced" in warning
         for warning in bias_diagnostic.warnings
     ))
+    prior_concentration_flag = float(any(
+        "Prior spread is concentrated" in warning
+        for warning in bias_diagnostic.warnings
+    ))
 
     credible_lower, credible_upper = posterior.credible_interval
     robust_lower = posterior.mean - Z_975 * robust.robust_standard_error
@@ -290,11 +294,16 @@ def _summarise_fit(
             bias_diagnostic.posterior_pull_fraction
             if bias_diagnostic.posterior_pull_fraction is not None else 0.0
         ),
+        "prior_to_reference_sd_ratio": (
+            bias_diagnostic.prior_to_reference_sd_ratio
+            if bias_diagnostic.prior_to_reference_sd_ratio is not None else 0.0
+        ),
         "prior_retained_mass": bias_diagnostic.retained_prior_mass,
         "prior_interval_width": prior_summary.interval_width,
         "prior_boundary_cell_mass": prior_summary.boundary_cell_mass,
         "prior_conflict_flag": prior_conflict_flag,
         "posterior_pull_flag": posterior_pull_flag,
+        "prior_concentration_flag": prior_concentration_flag,
         "prior_bias_warning_count": float(len(bias_diagnostic.warnings)),
     }
 
@@ -393,6 +402,12 @@ def _aggregate(
         ),
         "posterior_pull_warning_rate": mean(
             record["posterior_pull_flag"] for record in records
+        ),
+        "prior_concentration_warning_rate": mean(
+            record["prior_concentration_flag"] for record in records
+        ),
+        "mean_prior_to_reference_sd_ratio": mean(
+            record["prior_to_reference_sd_ratio"] for record in records
         ),
         "mean_prior_retained_mass": mean(
             record["prior_retained_mass"] for record in records
@@ -511,6 +526,9 @@ def run_stress_grid(
                 "max_posterior_pull_fraction": bias_thresholds.max_posterior_pull_fraction,
                 "max_boundary_cell_mass": bias_thresholds.max_boundary_cell_mass,
                 "minimum_retained_prior_mass": bias_thresholds.minimum_retained_prior_mass,
+                "minimum_prior_to_reference_sd_ratio": (
+                    bias_thresholds.minimum_prior_to_reference_sd_ratio
+                ),
             },
         },
         "scenario_definitions": [

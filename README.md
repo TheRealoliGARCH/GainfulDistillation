@@ -255,8 +255,12 @@ The GitHub Actions workflow
 `.github/workflows/bayesian-prior-bias-stress-grid.yml` archives the
 fixed-seed JSON at
 `results/prior_bias_control_stress_seed_2026111402.json` and uploads a
-downloadable workflow artifact. Findings will be reported separately after
-the run; the experiment definition itself is not evidence of performance.
+downloadable workflow artifact. The [paired stress-grid analysis](results/prior_bias_control_stress_analysis.md)
+reports paired MAE/MSE differences and Monte Carlo standard errors. Across
+the full design, every tested mixture setting increased average paired
+point-estimation loss under the three high-variance/misspecified data
+processes, while the balanced-loss robust-Wald interval remained much closer
+to nominal coverage than the ordinary posterior interval.
 
 ### Monte Carlo experiment
 

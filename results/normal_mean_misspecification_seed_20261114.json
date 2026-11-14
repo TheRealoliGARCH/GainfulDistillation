@@ -1,0 +1,51 @@
+{
+  "design_note": "Adapted experiment using the GDS Sinc prior; not an exact replication of the paper's Normal-prior example.",
+  "experiment": "GDS Sinc-prior Normal-mean misspecification study",
+  "reference": "Li and Rice (2024), DOI 10.1214/24-STS935",
+  "results": [
+    {
+      "bias": -0.02100266534852867,
+      "mean_balanced_loss_robust_se": 0.10932653131937912,
+      "mean_frequentist_sandwich_se": 0.11187247456968168,
+      "mean_frequentist_sandwich_variance": 0.01259853102118281,
+      "mean_posterior_sd": 0.10926129056352457,
+      "mean_robust_variance": 0.012029657715581076,
+      "model_correctly_specified": true,
+      "posterior_coverage_mcse": 0.01862458053218917,
+      "posterior_credible_interval_coverage": 0.925,
+      "rmse": 0.11210060236880873,
+      "robust_coverage_mcse": 0.01804161855266871,
+      "robust_to_sandwich_variance_ratio": 0.9548460606522104,
+      "robust_wald_interval_coverage": 0.93,
+      "true_sd": 1.0,
+      "working_sd": 1.0
+    },
+    {
+      "bias": -0.003916459806441253,
+      "mean_balanced_loss_robust_se": 0.21490543529165013,
+      "mean_frequentist_sandwich_se": 0.22110388125784736,
+      "mean_frequentist_sandwich_variance": 0.04919313555322221,
+      "mean_posterior_sd": 0.10917870291270503,
+      "mean_robust_variance": 0.04647063507897001,
+      "model_correctly_specified": false,
+      "posterior_coverage_mcse": 0.032403703492039304,
+      "posterior_credible_interval_coverage": 0.7,
+      "rmse": 0.20405080540460263,
+      "robust_coverage_mcse": 0.016120638945153514,
+      "robust_to_sandwich_variance_ratio": 0.9446569029675549,
+      "robust_wald_interval_coverage": 0.945,
+      "true_sd": 2.0,
+      "working_sd": 1.0
+    }
+  ],
+  "settings": {
+    "parameter_bounds": [-8.0, 8.0],
+    "prior": "SincModulatedPrior(location=0, bandwidth=1, scale=2, rho=0)",
+    "quadrature_points": 1024,
+    "repetitions_per_scenario": 200,
+    "sample_size": 80,
+    "seed": 20261114,
+    "true_parameter": 0.5,
+    "working_likelihood": "Normal(theta, 1)"
+  }
+}

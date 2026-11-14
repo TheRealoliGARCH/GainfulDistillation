@@ -42,6 +42,7 @@ This is a falsifiable research conjecture, not an established empirical result. 
 | `src/gds_core/sinc_prior.py` | Proper non-negative Sinc-modulated univariate and independent-product priors |
 | `src/gds_core/posterior.py` | One-dimensional posterior estimation with log-likelihoods, quadrature and posterior summaries |
 | `src/gds_core/balanced_loss.py` | Scalar Bayesian balanced-loss variance correction using posterior score-information averaging |
+| `experiments/expanded_stress_grid.py` | Multi-distribution, multi-sample-size and multi-prior Monte Carlo stress grid |
 | `experiments/normal_mean_misspecification.py` | Reproducible Monte Carlo study under correct and misspecified Normal likelihood variance |
 | `src/gds_core/sandwich.py` | General estimating-equation sandwich covariance calculation |
 | `src/gds_core/verification.py` | Provenance-aware independent claim adjudication |
@@ -111,7 +112,7 @@ The implementation separates four mathematically distinct ideas:
 1. **Sandwich covariance:** `sandwich.py` computes the general estimating-equation covariance `A^{-1} B A^{-T}`, with an optional division by sample size. It requires model-specific sensitivity and variability inputs. This is not a complete implementation of the Bayesian balanced-loss estimator discussed by Li and Rice.
 2. **Sinc spectral modelling:** `sinc_kernel.py` implements the stationary band-limited Sinc covariance kernel for Gaussian-process models.
 3. **Proper Sinc-based prior:** `sinc_prior.py` implements a non-negative, normalised prior inspired by the Sinc-modulated prior in the second manuscript. It uses a fourth-power Sinc envelope and bounded cosine modulation. This is an explicit mathematical regularisation of the manuscript's proposal, not a verbatim implementation of its raw expression.
-4. **Scalar Bayesian balanced-loss correction:** `balanced_loss.py` implements the one-dimensional specialization of the Li–Rice balanced inference loss. The posterior point estimate remains the posterior mean; the robust variance is the posterior variance multiplied by the posterior expectation of the mean squared observation score divided by the scalar empirical Fisher information. The caller supplies model-specific observation scores and information at each posterior grid point. This assumes independent observations and is not yet a multivariate implementation.
+4. **Scalar Bayesian balanced-loss correction:** `balanced_loss.py` implements the one-dimensional specialization of the Li–Rice balanced inference loss. The posterior point estimate remains the posterior mean; the robust variance is the posterior variance multiplied by the posterior expectation of the mean squared observation score divided by the scalar empirical Fisher information. The caller supplies model-specific observation scores and information at each posterior grid point. For scalar models it may supply either the individual score vector or an exact `ScalarScoreSummary` containing its sample size and mean squared score. This assumes independent observations and is not yet a multivariate implementation.
 5. **Independent adjudication:** `verification.py` records the origin, claim, evidence references, methods, independent reviews, and decision. An originating agent cannot validate its own finding. Each independence group contributes at most one review. Quorums are configurable governance conventions, not universal statistical thresholds.
 
 ### Proper Sinc-modulated prior
@@ -165,6 +166,36 @@ python experiments/normal_mean_misspecification.py
 
 The sample size, number of repetitions, quadrature points, seed, true parameter, and true standard deviations can be changed with command-line arguments. The robust Wald interval is a repeated-sampling interval and must not be described as a posterior credible interval.
 
+### Expanded robustness stress grid
+
+The experiment `experiments/expanded_stress_grid.py` broadens the Normal-scale study across:
+
+- Normal errors with working-model standard deviation 1, 1.5 and 2.
+- Standardised Student-t(5) errors.
+- Standardised Laplace errors.
+- Random-design heteroscedastic errors with conditional variance `0.5 + 3 X^2`, where `X ~ Uniform(-1,1)`.
+- A standardised 95%/5% Gaussian contamination mixture.
+- Centred and standardised skewed Gamma errors.
+
+It crosses these eight data-generating processes with sample sizes 40, 80 and 160, and four prior configurations: baseline, concentrated, diffuse and spectrally modulated. The default design uses 200 replications per cell and 2,048 midpoint quadrature points. Identical simulated datasets are evaluated under all prior configurations within each scenario/sample-size cell (common random numbers), allowing more efficient prior-sensitivity comparisons.
+
+The working likelihood remains `Normal(theta,1)`. For the intercept-only location parameter, the scalar score is `y_i - theta` and the average empirical Fisher information is one. The experiment uses exact sufficient-statistic identities for the log likelihood and mean squared score, so it does not approximate those quantities by subsampling. Each cell reports bias, RMSE, Monte Carlo standard error of bias, posterior and robust Wald coverage with coverage MCSEs, interval widths, empirical sandwich variance comparison, theoretical variance comparison, and posterior boundary-cell mass.
+
+All observations are independent across units. The heteroscedastic case uses iid covariate-outcome pairs; no serial or cluster dependence is simulated. The robust interval is a Wald-type repeated-sampling interval, not a posterior credible interval. Coverage and variance results are finite-simulation estimates, not guarantees. The experiment is a GDS adaptation using the Sinc prior, not an exact replication of Li and Rice.
+
+Run it after installing GDS:
+
+```bash
+python experiments/expanded_stress_grid.py \
+  --sample-sizes 40 80 160 \
+  --repetitions 200 \
+  --points 2048 \
+  --seed 20261115 \
+  --output expanded_stress_grid_results.json
+```
+
+The `.github/workflows/bayesian-stress-grid.yml` workflow runs the standard design and stores the JSON output as a GitHub Actions artifact.
+
 The first recorded run used seed 20261114, sample size 80, 200 replications per scenario, and 1,024 quadrature points. Results are archived at `results/normal_mean_misspecification_seed_20261114.json`.
 
 | True observation SD | Mean posterior SD | Mean robust SE | Mean sandwich SE | Posterior 95% coverage | Robust Wald 95% coverage | Robust/sandwich variance ratio |
@@ -199,8 +230,8 @@ The Python workflow runs tests on pushes and pull requests that change source co
 
 ## Implementation status
 
-**Implemented:** GDS-Core structural graph, directed transmission-channel representation, online SLDE, probabilistic task routing, constrained quadratic resource allocation, Sinc covariance kernel, proper Sinc-modulated prior, one-dimensional Bayesian posterior reference engine, scalar Bayesian balanced-loss variance correction, frequentist sandwich covariance calculation, independent verification adjudication, and a reproducible Normal-mean misspecification experiment; all core components and the experiment entry point have automated tests.
+**Implemented:** GDS-Core structural graph, directed transmission-channel representation, online SLDE, probabilistic task routing, constrained quadratic resource allocation, Sinc covariance kernel, proper Sinc-modulated prior, one-dimensional Bayesian posterior reference engine, scalar Bayesian balanced-loss variance correction, frequentist sandwich covariance calculation, independent verification adjudication, and reproducible Normal-mean and expanded robustness Monte Carlo experiments; core components and experiment entry points have automated tests.
 
-**Next:** adaptive or higher-order posterior integration, multivariate posterior computation and matrix-valued balanced-loss extension, posterior-concentration diagnostics, coalition complementarity and coordination costs, calibration of gain and covariance estimates, and reproducible end-to-end evaluation.
+**Next:** review the full stress-grid results; add multivariate posterior computation and matrix-valued balanced-loss extension; examine posterior concentration and prior sensitivity; replicate NHANES; and evaluate GDS end-to-end under matched compute and data budgets.
 
 The PDF treatise provides the theoretical specification and empirical research programme. Claims of performance superiority remain subject to implementation, replication, and independent validation.

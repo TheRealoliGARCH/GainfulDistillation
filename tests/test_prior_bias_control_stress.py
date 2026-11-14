@@ -27,6 +27,7 @@ def test_bias_control_stress_grid_is_reproducible_and_paired():
     }
     for row in first["results"]:
         assert row["rmse"] >= 0.0
+        assert row["mean_absolute_error"] >= 0.0
         assert row["bias_mcse"] >= 0.0
         assert row["mean_balanced_loss_robust_se"] > 0.0
         assert row["mean_oracle_variance"] > 0.0
@@ -34,6 +35,14 @@ def test_bias_control_stress_grid_is_reproducible_and_paired():
         assert 0.0 <= row["posterior_credible_interval_coverage"] <= 1.0
         assert 0.0 <= row["robust_wald_interval_coverage"] <= 1.0
         assert 0.0 <= row["prior_conflict_warning_rate"] <= 1.0
+        if row["prior_variant"] == "nominal":
+            assert row["paired_mae_change_vs_nominal"] == pytest.approx(0.0)
+            assert row["paired_mae_change_mcse_vs_nominal"] == pytest.approx(0.0)
+        elif row["prior_variant"] == "centred_diffuse_reference":
+            assert row["paired_mae_change_vs_nominal"] is None
+        else:
+            assert row["paired_mae_change_mcse_vs_nominal"] >= 0.0
+            assert row["fraction_replications_with_lower_absolute_error_vs_nominal"] is not None
 
 
 def test_heteroskedastic_generator_reports_oracle_mean_variance():

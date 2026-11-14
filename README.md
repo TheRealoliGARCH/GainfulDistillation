@@ -181,7 +181,7 @@ It crosses these eight data-generating processes with sample sizes 40, 80 and 16
 
 The working likelihood remains `Normal(theta,1)`. For the intercept-only location parameter, the scalar score is `y_i - theta` and the average empirical Fisher information is one. The experiment uses exact sufficient-statistic identities for the log likelihood and mean squared score, so it does not approximate those quantities by subsampling. Each cell reports bias, RMSE, Monte Carlo standard error of bias, posterior and robust Wald coverage with coverage MCSEs, interval widths, empirical sandwich variance comparison, theoretical variance comparison, and posterior boundary-cell mass.
 
-All observations are independent across units. The heteroscedastic case uses iid covariate-outcome pairs; no serial or cluster dependence is simulated. The robust interval is a Wald-type repeated-sampling interval, not a posterior credible interval. Coverage and variance results are finite-simulation estimates, not guarantees. The experiment is a GDS adaptation using the Sinc prior, not an exact replication of Li and Rice.
+All observations are independent across units. The heteroscedastic case uses iid covariate-outcome pairs; no serial or cluster dependence is simulated. The balanced-loss robust interval and frequentist sandwich interval are Wald-type repeated-sampling intervals, not posterior credible intervals. Coverage and variance results are finite-simulation estimates, not guarantees. The experiment is a GDS adaptation using the Sinc prior, not an exact replication of Li and Rice.
 
 Run it after installing GDS:
 

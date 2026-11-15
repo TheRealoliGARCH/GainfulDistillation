@@ -1,0 +1,74 @@
+name: Bayesian Prior Bias Control
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "src/gds_core/sinc_prior.py"
+      - "src/gds_core/posterior.py"
+      - "src/gds_core/prior_diagnostics.py"
+      - "experiments/prior_bias_control.py"
+      - "tests/test_prior_bias_control.py"
+      - ".github/workflows/bayesian-prior-bias-control.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  prior-bias-control:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install GDS
+        run: python -m pip install .
+      - name: Run paired prior-bias-control experiment
+        run: |
+          python experiments/prior_bias_control.py \
+            --sample-sizes 40 80 160 \
+            --repetitions 200 \
+            --points 1024 \
+            --seed 20261114 \
+            --output prior_bias_control_results.json
+      - name: Upload study results
+        uses: actions/upload-artifact@v4
+        with:
+          name: gds-prior-bias-control-results
+          path: prior_bias_control_results.json
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Archive reproducible JSON results
+        uses: actions/github-script@v7
+        env:
+          RESULTS_FILE: prior_bias_control_results.json
+        with:
+          script: |
+            const fs = require('fs');
+            const content = fs.readFileSync(process.env.RESULTS_FILE, 'utf8');
+            const path = 'results/prior_bias_control_seed_20261114.json';
+            let sha;
+            try {
+              const existing = await github.rest.repos.getContent({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                path,
+                ref: 'main'
+              });
+              sha = existing.data.sha;
+            } catch (error) {
+              if (error.status !== 404) throw error;
+            }
+            await github.rest.repos.createOrUpdateFileContents({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              path,
+              message: 'Archive paired prior-bias-control results (seed 20261114)',
+              content: Buffer.from(content).toString('base64'),
+              branch: 'main',
+              ...(sha ? { sha } : {})
+            });

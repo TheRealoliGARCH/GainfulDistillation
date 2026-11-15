@@ -1,0 +1,20 @@
+{
+  "all_normalised_integrals_within_1e-10_of_one": true,
+  "all_peak_values_strictly_below_one": true,
+  "cup_normaliser_minus_e": 0.2070216633553179,
+  "cup_peak_strictly_below_one": true,
+  "direct_numpy_api_used": false,
+  "mahaloy_normaliser_minus_direct_integral": 0.0,
+  "quadrature_tolerances": {"epsabs": 1e-12, "epsrel": 1e-12, "limit": 500},
+  "results": {
+    "Cup": {"fourth_moment": 0.28538464708612454, "fourth_moment_quad_error": 3.1684060606954007e-15, "kurtosis": 1.548991521369453, "mean": 0.0, "normalised_density_integral": 1.0, "normalising_constant": 2.925303491814363, "peak_density": 0.929230705827751, "peak_strictly_below_one": true, "raw_kernel_integral": 2.925303491814363, "raw_kernel_integral_quad_error": 3.247739290628674e-14, "variance": 0.4292307058277509, "variance_quad_error": 4.765418124860764e-15},
+    "Ghosh": {"fourth_moment": 0.1572792297472101, "fourth_moment_quad_error": 5.608514312914053e-13, "kurtosis": 2.2410459688073603, "mean": 0.0, "normalised_density_integral": 0.9999999999999998, "normalising_constant": 2.413671104813002, "peak_density": 0.8286133085870243, "peak_strictly_below_one": true, "raw_kernel_integral": 2.4136711048130017, "raw_kernel_integral_quad_error": 1.2134125762551864e-13, "variance": 0.2649172903539256, "variance_quad_error": 4.2870247371605433e-13},
+    "Madras": {"fourth_moment": 0.239258185858049, "fourth_moment_quad_error": 4.976635072843036e-13, "kurtosis": 1.2752535879222653, "mean": 0.0, "normalised_density_integral": 1.0000000000000002, "normalising_constant": 1.009709188227373, "peak_density": 0.9903841736407111, "peak_strictly_below_one": true, "raw_kernel_integral": 1.0097091882273732, "raw_kernel_integral_quad_error": 1.1210023889456057e-14, "variance": 0.4331468153626013, "variance_quad_error": 1.916935872364338e-14},
+    "Mahaloy": {"fourth_moment": 0.05295920203921299, "fourth_moment_quad_error": 1.0210825915983146e-15, "kurtosis": 2.9146952314681136, "mean": 0.0, "normalised_density_integral": 1.0, "normalising_constant": 1.0298510264284924, "peak_density": 0.9710142285996303, "peak_strictly_below_one": true, "raw_kernel_integral": 1.0298510264284924, "raw_kernel_integral_quad_error": 1.1433643214747629e-14, "variance": 0.13479511114749426, "variance_quad_error": 1.4965263600285524e-15},
+    "Rocket cone": {"fourth_moment": 0.1342602545092112, "fourth_moment_quad_error": 1.4905882584815977e-15, "kurtosis": 2.085895218155902, "mean": 0.0, "normalised_density_integral": 1.0000000000000002, "normalising_constant": 1.4936482656248538, "peak_density": 0.6695016644910436, "peak_strictly_below_one": true, "raw_kernel_integral": 1.4936482656248542, "raw_kernel_integral_quad_error": 1.6582826951883835e-14, "variance": 0.2537041018036845, "variance_quad_error": 2.8166813526429526e-15},
+    "Temple bell": {"fourth_moment": 0.25, "fourth_moment_quad_error": 1.6139454818158017e-12, "kurtosis": 2.1884396152264762, "mean": 0.0, "normalised_density_integral": 1.0000000000000002, "normalising_constant": 1.812804954110954, "peak_density": 0.5516313256604186, "peak_strictly_below_one": true, "raw_kernel_integral": 1.8128049541109545, "raw_kernel_integral_quad_error": 1.6664588181863835e-12, "variance": 0.3379891200336424, "variance_quad_error": 1.8011469649561373e-12}
+  },
+  "scipy_version": "1.17.0",
+  "sinc_convention": "unnormalised sinc(u)=sin(u)/u, sinc(0)=1",
+  "verification_engine": "SciPy scipy.integrate.quad (QUADPACK)"
+}
